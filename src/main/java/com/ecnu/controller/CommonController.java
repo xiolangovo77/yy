@@ -28,40 +28,63 @@ public class CommonController {
     private AliOssUtil aliOssUtil;
 
     /**
-     * 文件上传
+     * 上传MP4视频文件
      * @param file
      * @return
      */
-    @PostMapping("/upload")
-    @Operation(summary = "文件上传")
-    public BaseResponse<?> upload(MultipartFile file){
-        ThrowUtils.throwIf(file == null,ErrorCode.PARAMS_ERROR,"文件不能为空");
-        // 获取文件大小（字节）
-        long fileSize = file.getSize();
-        log.info("文件上传：{}, 大小：{} bytes", file.getOriginalFilename(), fileSize);
-        // 如果超过业务限制（100MB），直接拒绝
-        long maxSize = 100 * 1024 * 1024; // 100MB
-        if (fileSize > maxSize) {
-            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "文件大小不能超过100MB");
-        }
-        try {
-            String objectName = GetObjectName(file);
-            //文件的请求路径
-            String filePath=aliOssUtil.upload(file.getBytes(),objectName);
-            return ResultUtils.success(filePath);
-        } catch (IOException e) {
-            log.error("文件上传失败：{}",e);
-        }
-        return ResultUtils.error(ErrorCode.OPERATION_ERROR,"文件上传失败");
+    @PostMapping("/uploadMP4")
+    @Operation(summary = "上传MP4视频")
+    public BaseResponse<?> uploadMP4(MultipartFile file) {
+        return doUpload(file, ".mp4", 500 * 1024 * 1024); // 500MB
     }
 
-    private String GetObjectName(MultipartFile file){
-        //原始文件名
+    /**
+     * 上传MD报告文件
+     * @param file
+     * @return
+     */
+    @PostMapping("/uploadMD")
+    @Operation(summary = "上传MD报告")
+    public BaseResponse<?> uploadMD(MultipartFile file) {
+        return doUpload(file, ".md", 10 * 1024 * 1024); // 10MB
+    }
+
+    /**
+     * 通用上传逻辑
+     */
+    private BaseResponse<?> doUpload(MultipartFile file, String allowedExtension, long maxSize) {
+        ThrowUtils.throwIf(file == null, ErrorCode.PARAMS_ERROR, "文件不能为空");
+
+        // 校验文件类型
         String originalFilename = file.getOriginalFilename();
-        //截取原始文件的后缀
-        String extension=originalFilename.substring(originalFilename.lastIndexOf("."));
-        //构造新文件名称
-        String objectName= UUID.randomUUID().toString()+extension;
-        return objectName;
+        if (originalFilename == null || !originalFilename.contains(".")) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "文件类型不支持，仅允许上传 " + allowedExtension + " 文件");
+        }
+        String extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+        if (!allowedExtension.equals(extension)) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "文件类型不支持，仅允许上传 " + allowedExtension + " 文件");
+        }
+
+        // 校验文件大小
+        long fileSize = file.getSize();
+        log.info("文件上传：{}, 大小：{} bytes", originalFilename, fileSize);
+        if (fileSize > maxSize) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "文件大小不能超过" + (maxSize / 1024 / 1024) + "MB");
+        }
+
+        try {
+            String objectName = getObjectName(file);
+            String filePath = aliOssUtil.upload(file.getBytes(), objectName);
+            return ResultUtils.success(filePath);
+        } catch (IOException e) {
+            log.error("文件上传失败：{}", e);
+        }
+        return ResultUtils.error(ErrorCode.OPERATION_ERROR, "文件上传失败");
+    }
+
+    private String getObjectName(MultipartFile file) {
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        return UUID.randomUUID().toString() + extension;
     }
 }

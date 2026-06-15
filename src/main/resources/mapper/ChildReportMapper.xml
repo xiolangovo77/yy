@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.ecnu.mapper.ChildReportMapper">
+
+<!--    添加报告-->
+    <insert id="add" parameterType="com.ecnu.model.entity.ChildReport">
+        INSERT INTO child_report(id, child_id, report_no, report_url, upload_doctor_id, is_deleted, create_time, update_time)
+        VALUES(#{id}, #{childId}, #{reportNo}, #{reportUrl}, #{uploadDoctorId}, #{isDeleted}, #{createTime}, #{updateTime})
+    </insert>
+
+<!--    修改报告-->
+    <update id="update" parameterType="com.ecnu.model.entity.ChildReport">
+        UPDATE child_report
+        <set>
+            <if test="childId != null">
+                child_id = #{childId},
+            </if>
+            <if test="reportNo != null and reportNo != ''">
+                report_no = #{reportNo},
+            </if>
+            <if test="reportUrl != null and reportUrl != ''">
+                report_url = #{reportUrl},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime},
+            </if>
+        </set>
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+<!--    根据id删除报告（软删除）-->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        UPDATE child_report SET is_deleted = 1 WHERE id = #{id} AND is_deleted = 0
+    </delete>
+
+<!--    根据id获取报告-->
+    <select id="getById" resultType="com.ecnu.model.entity.ChildReport">
+        select id, child_id, report_no, report_url, upload_doctor_id, is_deleted, create_time, update_time
+        from child_report
+        WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+</mapper>
