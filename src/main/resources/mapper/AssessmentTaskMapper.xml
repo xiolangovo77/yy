@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.ecnu.mapper.AssessmentTaskMapper">
+
+    <insert id="add" parameterType="com.ecnu.model.entity.AssessmentTask">
+        INSERT INTO assessment_task(id, doctor_id, child_id, task_no, task_status, current_step, is_deleted, create_time, update_time)
+        VALUES(#{id}, #{doctorId}, #{childId}, #{taskNo}, #{taskStatus}, #{currentStep}, #{isDeleted}, #{createTime}, #{updateTime})
+    </insert>
+
+    <select id="getById" resultType="com.ecnu.model.entity.AssessmentTask">
+        select id, doctor_id, child_id, task_no, task_status, current_step, is_deleted, create_time, update_time
+        from assessment_task
+        WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+    <update id="updateStart">
+        UPDATE assessment_task SET doctor_id = #{param2}, task_status = 1 WHERE id = #{param1} AND is_deleted = 0
+    </update>
+
+    <update id="updateCurrentStep">
+        UPDATE assessment_task SET current_step = #{param2} WHERE id = #{param1} AND is_deleted = 0
+    </update>
+
+    <update id="updateStatus">
+        UPDATE assessment_task SET task_status = #{param2} WHERE id = #{param1} AND is_deleted = 0
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        UPDATE assessment_task SET is_deleted = 1 WHERE id = #{id} AND is_deleted = 0
+    </delete>
+
+</mapper>
