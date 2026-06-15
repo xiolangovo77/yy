@@ -2,8 +2,10 @@ package com.ecnu.interceptor;
 
 import com.ecnu.common.DefaultValue;
 import com.ecnu.context.BaseContext;
+import com.ecnu.context.RoleContext;
 import com.ecnu.exception.BusinessException;
 import com.ecnu.exception.ErrorCode;
+import com.ecnu.model.enums.RoleEnum;
 import com.ecnu.properties.JwtProperties;
 import com.ecnu.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
@@ -54,8 +56,11 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
             log.info("jwt校验:{}", token);
             Claims claims = JwtUtil.parseJWT(jwtProperties.getSecretKey(), token);
             Long id = Long.valueOf(claims.get("id").toString());
-            log.info("当前员工id：", id);
+            Long roleId = Long.valueOf(claims.get("roleId").toString());
+            String role = RoleEnum.getNameByCode(roleId);
+            log.info("当前员工id：{}，身份为：{}", id, role);
             BaseContext.setCurrentId(id);
+            RoleContext.setCurrentRoleId(roleId);
             // redis查找
             // 构建缓存 key
             String redisKey = DefaultValue.DEFAULT_LOGIN_REDIS_KEY + id;

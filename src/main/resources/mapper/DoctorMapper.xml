@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.ecnu.mapper.DoctorMapper">
+
+<!--    添加医生-->
+    <insert id="add" parameterType="com.ecnu.model.entity.Doctor">
+        INSERT INTO sys_doctor(id, doctor_name, title, hospital, account, password, phone, role, status, is_deleted, create_time, update_time)
+        VALUES(#{id}, #{doctorName}, #{title}, #{hospital}, #{account}, #{password}, #{phone}, #{role}, #{status}, #{isDeleted}, #{createTime}, #{updateTime})
+    </insert>
+
+<!--    更改医生账号状态-->
+    <update id="updateByStatus" parameterType="com.ecnu.model.dto.DoctorStatusDTO">
+        UPDATE sys_doctor SET status = #{status} WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+<!--    修改医生信息-->
+    <update id="update" parameterType="com.ecnu.model.entity.Doctor">
+        UPDATE sys_doctor
+        <set>
+            <if test="doctorName != null and doctorName != ''">
+                doctor_name = #{doctorName},
+            </if>
+            <if test="title != null">
+                title = #{title},
+            </if>
+            <if test="hospital != null and hospital != ''">
+                hospital = #{hospital},
+            </if>
+            <if test="account != null and account != ''">
+                account = #{account},
+            </if>
+            <if test="password != null and password != ''">
+                password = #{password},
+            </if>
+            <if test="phone != null">
+                phone = #{phone},
+            </if>
+            <if test="role != null">
+                role = #{role},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime},
+            </if>
+        </set>
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+<!--    根据id删除医生（软删除）-->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        UPDATE sys_doctor SET is_deleted = 1 WHERE id = #{id} AND is_deleted = 0
+    </delete>
+
+<!--    根据id获取医生信息-->
+    <select id="getById" resultType="com.ecnu.model.entity.Doctor">
+        select id, doctor_name, title, hospital, account, password, phone, role, status, is_deleted, create_time, update_time
+        from sys_doctor
+        WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+<!--    分页获取医生信息-->
+    <select id="list" resultType="com.ecnu.model.entity.Doctor">
+        select id, doctor_name, title, hospital, account, password, phone, role, status, is_deleted, create_time, update_time
+        from sys_doctor
+        WHERE is_deleted = 0
+        <if test="doctorName != null and doctorName != ''">
+            AND doctor_name LIKE CONCAT('%', #{doctorName}, '%')
+        </if>
+        <if test="account != null and account != ''">
+            AND account LIKE CONCAT('%', #{account}, '%')
+        </if>
+        <if test="role != null">
+            AND role = #{role}
+        </if>
+        ORDER BY ${sortField} ${sortOrder}
+    </select>
+
+<!--    根据账号和密码获取医生信息-->
+    <select id="getByAccountPassword" resultType="com.ecnu.model.entity.Doctor">
+        select id, doctor_name, title, hospital, account, password, phone, role, status, is_deleted, create_time, update_time
+        from sys_doctor
+        WHERE account = #{account} AND password = #{password} AND is_deleted = 0
+    </select>
+
+</mapper>

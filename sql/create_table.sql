@@ -13,6 +13,7 @@ CREATE TABLE `sys_doctor` (
                               `account` varchar(64) NOT NULL COMMENT '登录账号（手机号/邮箱）',
                               `password` varchar(128) NOT NULL COMMENT '加密密码',
                               `phone` varchar(20) DEFAULT NULL COMMENT '联系电话',
+                              `role` tinyint unsigned NOT NULL DEFAULT 0 COMMENT '角色类型 0-普通医生 1-管理员',
                               `status` tinyint unsigned NOT NULL DEFAULT '1' COMMENT '账号状态 0-禁用 1-正常',
                               `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                               `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

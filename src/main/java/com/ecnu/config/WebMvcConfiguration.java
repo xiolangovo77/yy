@@ -25,6 +25,8 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
         registry.addInterceptor(jwtTokenInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns("/user/login",
+                        "/doctor/login",
+                        "/doctor/register",
                         // --- Swagger / Knife4j 接口文档相关路径 ---
                         "/doc.html",                  // Knife4j 页面
                         "/swagger-ui.html",           // Swagger UI 页面 (YAML中配置的)

@@ -1,6 +1,7 @@
 package com.ecnu.aspect;
 
 import com.ecnu.annotation.AutoFill;
+import com.ecnu.common.LogicDeleteConstant;
 import com.ecnu.model.enums.OperationType;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -50,10 +51,12 @@ public class AutoFillAspect {
             try{
                 Method setCreateTime = entity.getClass().getDeclaredMethod("setCreateTime", LocalDateTime.class);
                 Method setUpdateTime = entity.getClass().getDeclaredMethod("setUpdateTime", LocalDateTime.class);
+                Method setIsDeleted = entity.getClass().getDeclaredMethod("setIsDeleted", Integer.class);
 
                 //通过反射为对象赋值
                 setCreateTime.invoke(entity,now);
                 setUpdateTime.invoke(entity,now);
+                setIsDeleted.invoke(entity, LogicDeleteConstant.NOT_DELETED);
             }catch (Exception e){
                 e.printStackTrace();
             }
