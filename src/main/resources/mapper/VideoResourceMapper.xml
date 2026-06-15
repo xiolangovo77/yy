@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.ecnu.mapper.VideoResourceMapper">
+
+<!--    添加视频资源-->
+    <insert id="add" parameterType="com.ecnu.model.entity.VideoResource">
+        INSERT INTO video_resource(id, child_id, video_url, video_name, upload_doctor_id, is_deleted, create_time, update_time)
+        VALUES(#{id}, #{childId}, #{videoUrl}, #{videoName}, #{uploadDoctorId}, #{isDeleted}, #{createTime}, #{updateTime})
+    </insert>
+
+<!--    修改视频资源-->
+    <update id="update" parameterType="com.ecnu.model.entity.VideoResource">
+        UPDATE video_resource
+        <set>
+            <if test="childId != null">
+                child_id = #{childId},
+            </if>
+            <if test="videoUrl != null and videoUrl != ''">
+                video_url = #{videoUrl},
+            </if>
+            <if test="videoName != null">
+                video_name = #{videoName},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime},
+            </if>
+        </set>
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+<!--    根据id删除视频资源（软删除）-->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        UPDATE video_resource SET is_deleted = 1 WHERE id = #{id} AND is_deleted = 0
+    </delete>
+
+<!--    根据id获取视频资源-->
+    <select id="getById" resultType="com.ecnu.model.entity.VideoResource">
+        select id, child_id, video_url, video_name, upload_doctor_id, is_deleted, create_time, update_time
+        from video_resource
+        WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+
+</mapper>

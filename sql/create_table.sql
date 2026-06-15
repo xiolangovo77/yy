@@ -46,7 +46,6 @@ CREATE TABLE `video_resource` (
                                   `child_id` bigint unsigned NOT NULL COMMENT '关联儿童ID',
                                   `video_url` varchar(512) NOT NULL COMMENT '视频存储地址',
                                   `video_name` varchar(128) DEFAULT NULL COMMENT '视频名称',
-                                  `duration` varchar(16) DEFAULT NULL COMMENT '视频时长（如 05:30）',
                                   `upload_doctor_id` bigint unsigned DEFAULT NULL COMMENT '上传医生ID',
                                   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                                   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

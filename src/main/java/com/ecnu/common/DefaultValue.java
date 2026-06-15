@@ -8,4 +8,5 @@ public interface DefaultValue {
     String DEFAULT_LOGIN_REDIS_KEY = "yy:usrLogin";
     String DEFAULT_GENDER = "未提供";
     String DEFAULT_ASSESS_TYPE = "短视频结构化观察与分析";
+    String DEFAULT_VIDEO_NAME = "诊断视频";
 }
