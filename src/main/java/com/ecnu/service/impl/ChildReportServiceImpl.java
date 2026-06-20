@@ -108,11 +108,11 @@ public class ChildReportServiceImpl implements ChildReportService {
         List<ChildReport> list = childReportMapper.list(pageRequest);
         ThrowUtils.throwIf(list == null, ErrorCode.OPERATION_ERROR);
 
+        PageInfo<ChildReport> pageInfo = new PageInfo<>(list);
         List<ChildReportVO> voList = list.stream()
                 .map(r -> BeanUtil.toBean(r, ChildReportVO.class))
                 .collect(Collectors.toList());
-        PageInfo<ChildReportVO> page = new PageInfo<>(voList);
-        return new PageResponse(page.getTotal(), page.getList());
+        return new PageResponse(pageInfo.getTotal(), voList);
     }
 
     /**

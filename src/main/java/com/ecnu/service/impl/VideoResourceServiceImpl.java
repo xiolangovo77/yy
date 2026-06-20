@@ -131,11 +131,11 @@ public class VideoResourceServiceImpl implements VideoResourceService {
         List<VideoResource> list = videoResourceMapper.list(pageRequest);
         ThrowUtils.throwIf(list == null, ErrorCode.OPERATION_ERROR);
 
+        PageInfo<VideoResource> pageInfo = new PageInfo<>(list);
         List<VideoResourceVO> voList = list.stream()
                 .map(v -> BeanUtil.toBean(v, VideoResourceVO.class))
                 .collect(Collectors.toList());
-        PageInfo<VideoResourceVO> page = new PageInfo<>(voList);
-        return new PageResponse(page.getTotal(), page.getList());
+        return new PageResponse(pageInfo.getTotal(), voList);
     }
 
     /**

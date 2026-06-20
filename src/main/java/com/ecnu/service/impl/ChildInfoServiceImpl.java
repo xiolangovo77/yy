@@ -200,11 +200,11 @@ public class ChildInfoServiceImpl implements ChildInfoService {
         List<ChildInfo> list = childInfoMapper.list(pageRequest);
         ThrowUtils.throwIf(list == null, ErrorCode.OPERATION_ERROR);
 
-        // 封装结果
+        // 封装结果：先用原始查询结果获取分页信息，再转换为 VO
+        PageInfo<ChildInfo> pageInfo = new PageInfo<>(list);
         List<ChildInfoVO> voList = list.stream()
                 .map(childInfo -> BeanUtil.toBean(childInfo, ChildInfoVO.class))
                 .collect(Collectors.toList());
-        PageInfo<ChildInfoVO> page = new PageInfo<>(voList);
-        return new PageResponse(page.getTotal(), page.getList());
+        return new PageResponse(pageInfo.getTotal(), voList);
     }
 }

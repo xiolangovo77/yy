@@ -20,7 +20,7 @@
             <if test="doctorName != null and doctorName != ''">
                 doctor_name = #{doctorName},
             </if>
-            <if test="title != null">
+            <if test="title != null and title != ''">
                 title = #{title},
             </if>
             <if test="hospital != null and hospital != ''">
@@ -32,7 +32,7 @@
             <if test="password != null and password != ''">
                 password = #{password},
             </if>
-            <if test="phone != null">
+            <if test="phone != null and phone != ''">
                 phone = #{phone},
             </if>
             <if test="role != null">

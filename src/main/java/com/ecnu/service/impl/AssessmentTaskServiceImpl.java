@@ -142,12 +142,12 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         List<AssessmentTask> list = assessmentTaskMapper.list(pageRequest);
         ThrowUtils.throwIf(list == null, ErrorCode.OPERATION_ERROR);
 
-        // 封装结果
+        // 封装结果：先用原始查询结果获取分页信息，再转换为 VO
+        PageInfo<AssessmentTask> pageInfo = new PageInfo<>(list);
         List<AssessmentTaskVO> voList = list.stream()
                 .map(task -> BeanUtil.toBean(task, AssessmentTaskVO.class))
                 .collect(Collectors.toList());
-        PageInfo<AssessmentTaskVO> page = new PageInfo<>(voList);
-        return new PageResponse(page.getTotal(), page.getList());
+        return new PageResponse(pageInfo.getTotal(), voList);
     }
 
     /**

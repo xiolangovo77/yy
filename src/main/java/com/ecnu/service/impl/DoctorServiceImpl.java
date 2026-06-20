@@ -281,12 +281,12 @@ public class DoctorServiceImpl implements DoctorService {
         List<Doctor> list = doctorMapper.list(pageRequest);
         ThrowUtils.throwIf(list == null, ErrorCode.OPERATION_ERROR);
 
-        // 封装结果
+        // 封装结果：先用原始查询结果获取分页信息，再转换为 VO
+        PageInfo<Doctor> pageInfo = new PageInfo<>(list);
         List<DoctorVO> voList = list.stream()
                 .map(doctor -> BeanUtil.toBean(doctor, DoctorVO.class))
                 .collect(Collectors.toList());
-        PageInfo<DoctorVO> page = new PageInfo<>(voList);
-        return new PageResponse(page.getTotal(), page.getList());
+        return new PageResponse(pageInfo.getTotal(), voList);
     }
 
     /**
