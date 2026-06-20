@@ -25,6 +25,22 @@
         UPDATE assessment_task SET task_status = #{param2} WHERE id = #{param1} AND is_deleted = 0
     </update>
 
+    <select id="list" resultType="com.ecnu.model.entity.AssessmentTask">
+        select id, doctor_id, child_id, task_no, task_status, current_step, is_deleted, create_time, update_time
+        from assessment_task
+        WHERE is_deleted = 0
+        <if test="taskStatus != null">
+            AND task_status = #{taskStatus}
+        </if>
+        <if test="childId != null">
+            AND child_id = #{childId}
+        </if>
+        <if test="doctorId != null">
+            AND doctor_id = #{doctorId}
+        </if>
+        ORDER BY ${sortField} ${sortOrder}
+    </select>
+
     <delete id="deleteById" parameterType="java.lang.Long">
         UPDATE assessment_task SET is_deleted = 1 WHERE id = #{id} AND is_deleted = 0
     </delete>

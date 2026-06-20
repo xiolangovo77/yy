@@ -1,8 +1,10 @@
 package com.ecnu.service;
 
 import com.ecnu.common.DeleteRequest;
+import com.ecnu.common.PageResponse;
 import com.ecnu.model.dto.AssessmentForm1SubmitDTO;
 import com.ecnu.model.dto.AssessmentForm2SubmitDTO;
+import com.ecnu.model.dto.AssessmentTaskPageRequestDTO;
 import com.ecnu.model.dto.AssessmentTaskPublishDTO;
 import com.ecnu.model.vo.AssessmentForm1VO;
 import com.ecnu.model.vo.AssessmentForm2VO;
@@ -24,6 +26,11 @@ public interface AssessmentTaskService {
      * 根据id获取评估任务
      */
     AssessmentTaskVO getById(Long id);
+
+    /**
+     * 分页获取评估任务列表
+     */
+    PageResponse list(AssessmentTaskPageRequestDTO pageRequest);
 
     /**
      * 根据任务ID获取一阶段表单

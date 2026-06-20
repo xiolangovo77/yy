@@ -1,9 +1,12 @@
 package com.ecnu.mapper;
 
 import com.ecnu.annotation.AutoFill;
+import com.ecnu.model.dto.ChildReportPageRequestDTO;
 import com.ecnu.model.entity.ChildReport;
 import com.ecnu.model.enums.OperationType;
 import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
 
 @Mapper
 public interface ChildReportMapper {
@@ -29,4 +32,9 @@ public interface ChildReportMapper {
      */
     @AutoFill(OperationType.UPDATE)
     boolean update(ChildReport childReport);
+
+    /**
+     * 分页获取报告列表（支持按儿童ID筛选）
+     */
+    List<ChildReport> list(ChildReportPageRequestDTO pageRequest);
 }

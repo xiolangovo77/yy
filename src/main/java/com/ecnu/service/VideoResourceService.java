@@ -1,7 +1,9 @@
 package com.ecnu.service;
 
 import com.ecnu.common.DeleteRequest;
+import com.ecnu.common.PageResponse;
 import com.ecnu.model.dto.VideoResourceAddDTO;
+import com.ecnu.model.dto.VideoResourcePageRequestDTO;
 import com.ecnu.model.dto.VideoResourceUpdateDTO;
 import com.ecnu.model.vo.VideoResourceVO;
 
@@ -35,5 +37,8 @@ public interface VideoResourceService {
      */
     boolean update(VideoResourceUpdateDTO videoResourceUpdateDTO);
 
-
+    /**
+     * 分页获取视频资源列表
+     */
+    PageResponse list(VideoResourcePageRequestDTO pageRequest);
 }

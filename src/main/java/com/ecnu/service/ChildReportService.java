@@ -1,7 +1,9 @@
 package com.ecnu.service;
 
 import com.ecnu.common.DeleteRequest;
+import com.ecnu.common.PageResponse;
 import com.ecnu.model.dto.ChildReportAddDTO;
+import com.ecnu.model.dto.ChildReportPageRequestDTO;
 import com.ecnu.model.dto.ChildReportUpdateDTO;
 import com.ecnu.model.vo.ChildReportVO;
 
@@ -26,4 +28,9 @@ public interface ChildReportService {
      * 修改报告
      */
     boolean update(ChildReportUpdateDTO childReportUpdateDTO);
+
+    /**
+     * 分页获取报告列表
+     */
+    PageResponse list(ChildReportPageRequestDTO pageRequest);
 }

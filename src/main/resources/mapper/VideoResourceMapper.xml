@@ -40,5 +40,14 @@
         WHERE id = #{id} AND is_deleted = 0
     </select>
 
+    <select id="list" resultType="com.ecnu.model.entity.VideoResource">
+        select id, child_id, video_url, video_name, upload_doctor_id, is_deleted, create_time, update_time
+        from video_resource
+        WHERE is_deleted = 0
+        <if test="childId != null">
+            AND child_id = #{childId}
+        </if>
+        ORDER BY ${sortField} ${sortOrder}
+    </select>
 
 </mapper>

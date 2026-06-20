@@ -5,6 +5,7 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.ecnu.common.DefaultValue;
 import com.ecnu.common.DeleteRequest;
+import com.ecnu.common.PageResponse;
 import com.ecnu.context.BaseContext;
 import com.ecnu.exception.BusinessException;
 import com.ecnu.exception.ErrorCode;
@@ -14,6 +15,7 @@ import com.ecnu.mapper.AssessmentForm2Mapper;
 import com.ecnu.mapper.AssessmentTaskMapper;
 import com.ecnu.model.dto.AssessmentForm1SubmitDTO;
 import com.ecnu.model.dto.AssessmentForm2SubmitDTO;
+import com.ecnu.model.dto.AssessmentTaskPageRequestDTO;
 import com.ecnu.model.dto.AssessmentTaskPublishDTO;
 import com.ecnu.model.enums.DiseaseTypeEnum;
 import com.ecnu.model.entity.AssessmentForm1;
@@ -23,9 +25,14 @@ import com.ecnu.model.vo.AssessmentForm1VO;
 import com.ecnu.model.vo.AssessmentForm2VO;
 import com.ecnu.model.vo.AssessmentTaskVO;
 import com.ecnu.service.AssessmentTaskService;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AssessmentTaskServiceImpl implements AssessmentTaskService {
@@ -103,6 +110,44 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         AssessmentTaskVO taskVO = new AssessmentTaskVO();
         BeanUtil.copyProperties(task, taskVO);
         return taskVO;
+    }
+
+    /**
+     * 分页获取评估任务列表
+     */
+    @Override
+    public PageResponse list(AssessmentTaskPageRequestDTO pageRequest) {
+        // 校验参数
+        int current = pageRequest.getCurrent();
+        ThrowUtils.throwIf(current < 1, ErrorCode.PARAMS_ERROR, "页码必须大于0");
+        int pageSize = pageRequest.getPageSize();
+        ThrowUtils.throwIf(pageSize < 1, ErrorCode.PARAMS_ERROR, "页面大小必须大于0");
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "页面大小必须小于20");
+        String sortField = pageRequest.getSortField();
+        if (StrUtil.hasBlank(sortField)) {
+            sortField = DefaultValue.DEFAULT_SORT_Field;
+            pageRequest.setSortField(sortField);
+        }
+        String sortOrder = pageRequest.getSortOrder();
+        if (sortOrder == null || sortOrder.isEmpty()) {
+            sortOrder = DefaultValue.DEFAULT_SORT_ORDER;
+            pageRequest.setSortOrder(sortOrder);
+        }
+        ThrowUtils.throwIf(!("ascend".equalsIgnoreCase(sortOrder) || "descend".equalsIgnoreCase(sortOrder)),
+                ErrorCode.PARAMS_ERROR, "排序仅支持ascend/descend");
+        pageRequest.setSortOrder(sortOrder.equalsIgnoreCase("ascend") ? "ASC" : "DESC");
+
+        // 数据库查询
+        PageHelper.startPage(current, pageSize);
+        List<AssessmentTask> list = assessmentTaskMapper.list(pageRequest);
+        ThrowUtils.throwIf(list == null, ErrorCode.OPERATION_ERROR);
+
+        // 封装结果
+        List<AssessmentTaskVO> voList = list.stream()
+                .map(task -> BeanUtil.toBean(task, AssessmentTaskVO.class))
+                .collect(Collectors.toList());
+        PageInfo<AssessmentTaskVO> page = new PageInfo<>(voList);
+        return new PageResponse(page.getTotal(), page.getList());
     }
 
     /**

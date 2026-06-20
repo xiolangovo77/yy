@@ -3,10 +3,12 @@ package com.ecnu.controller;
 import com.ecnu.annotation.RequireRole;
 import com.ecnu.common.BaseResponse;
 import com.ecnu.common.DeleteRequest;
+import com.ecnu.common.PageResponse;
 import com.ecnu.common.ResultUtils;
 import com.ecnu.exception.ErrorCode;
 import com.ecnu.exception.ThrowUtils;
 import com.ecnu.model.dto.VideoResourceAddDTO;
+import com.ecnu.model.dto.VideoResourcePageRequestDTO;
 import com.ecnu.model.dto.VideoResourceUpdateDTO;
 import com.ecnu.model.enums.RoleEnum;
 import com.ecnu.model.vo.VideoResourceVO;
@@ -25,6 +27,19 @@ public class VideoResourceController {
 
     @Resource
     private VideoResourceService videoResourceService;
+
+    /**
+     * 分页获取视频资源列表
+     */
+    @PostMapping("/list")
+    @Operation(summary = "分页获取视频资源列表")
+    @RequireRole({RoleEnum.DOCTOR, RoleEnum.ADMIN})
+    public BaseResponse<PageResponse> list(@RequestBody VideoResourcePageRequestDTO pageRequest) {
+        log.info("分页获取视频资源列表：{}", pageRequest);
+        ThrowUtils.throwIf(pageRequest == null, ErrorCode.PARAMS_ERROR);
+        PageResponse result = videoResourceService.list(pageRequest);
+        return ResultUtils.success(result);
+    }
 
     /**
      * 添加视频资源

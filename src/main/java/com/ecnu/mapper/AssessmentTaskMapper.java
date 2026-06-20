@@ -1,9 +1,12 @@
 package com.ecnu.mapper;
 
 import com.ecnu.annotation.AutoFill;
+import com.ecnu.model.dto.AssessmentTaskPageRequestDTO;
 import com.ecnu.model.entity.AssessmentTask;
 import com.ecnu.model.enums.OperationType;
 import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
 
 @Mapper
 public interface AssessmentTaskMapper {
@@ -15,6 +18,11 @@ public interface AssessmentTaskMapper {
      * 根据id获取评估任务
      */
     AssessmentTask getById(Long id);
+
+    /**
+     * 分页获取评估任务列表（支持按状态/儿童/医生筛选）
+     */
+    List<AssessmentTask> list(AssessmentTaskPageRequestDTO pageRequest);
 
     /**
      * 开始任务：分配医生 + 更新状态为进行中

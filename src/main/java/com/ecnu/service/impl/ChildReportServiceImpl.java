@@ -3,19 +3,27 @@ package com.ecnu.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import com.ecnu.common.DefaultValue;
 import com.ecnu.common.DeleteRequest;
+import com.ecnu.common.PageResponse;
 import com.ecnu.context.BaseContext;
 import com.ecnu.exception.BusinessException;
 import com.ecnu.exception.ErrorCode;
 import com.ecnu.exception.ThrowUtils;
 import com.ecnu.mapper.ChildReportMapper;
 import com.ecnu.model.dto.ChildReportAddDTO;
+import com.ecnu.model.dto.ChildReportPageRequestDTO;
 import com.ecnu.model.dto.ChildReportUpdateDTO;
 import com.ecnu.model.entity.ChildReport;
 import com.ecnu.model.vo.ChildReportVO;
 import com.ecnu.service.ChildReportService;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ChildReportServiceImpl implements ChildReportService {
@@ -70,6 +78,41 @@ public class ChildReportServiceImpl implements ChildReportService {
         boolean result = childReportMapper.deleteById(id);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return result;
+    }
+
+    /**
+     * 分页获取报告列表
+     */
+    @Override
+    public PageResponse list(ChildReportPageRequestDTO pageRequest) {
+        int current = pageRequest.getCurrent();
+        ThrowUtils.throwIf(current < 1, ErrorCode.PARAMS_ERROR, "页码必须大于0");
+        int pageSize = pageRequest.getPageSize();
+        ThrowUtils.throwIf(pageSize < 1, ErrorCode.PARAMS_ERROR, "页面大小必须大于0");
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "页面大小必须小于20");
+        String sortField = pageRequest.getSortField();
+        if (StrUtil.hasBlank(sortField)) {
+            sortField = DefaultValue.DEFAULT_SORT_Field;
+            pageRequest.setSortField(sortField);
+        }
+        String sortOrder = pageRequest.getSortOrder();
+        if (sortOrder == null || sortOrder.isEmpty()) {
+            sortOrder = DefaultValue.DEFAULT_SORT_ORDER;
+            pageRequest.setSortOrder(sortOrder);
+        }
+        ThrowUtils.throwIf(!("ascend".equalsIgnoreCase(sortOrder) || "descend".equalsIgnoreCase(sortOrder)),
+                ErrorCode.PARAMS_ERROR, "排序仅支持ascend/descend");
+        pageRequest.setSortOrder(sortOrder.equalsIgnoreCase("ascend") ? "ASC" : "DESC");
+
+        PageHelper.startPage(current, pageSize);
+        List<ChildReport> list = childReportMapper.list(pageRequest);
+        ThrowUtils.throwIf(list == null, ErrorCode.OPERATION_ERROR);
+
+        List<ChildReportVO> voList = list.stream()
+                .map(r -> BeanUtil.toBean(r, ChildReportVO.class))
+                .collect(Collectors.toList());
+        PageInfo<ChildReportVO> page = new PageInfo<>(voList);
+        return new PageResponse(page.getTotal(), page.getList());
     }
 
     /**

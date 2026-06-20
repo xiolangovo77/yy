@@ -1,9 +1,12 @@
 package com.ecnu.mapper;
 
 import com.ecnu.annotation.AutoFill;
+import com.ecnu.model.dto.VideoResourcePageRequestDTO;
 import com.ecnu.model.entity.VideoResource;
 import com.ecnu.model.enums.OperationType;
 import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
 
 @Mapper
 public interface VideoResourceMapper {
@@ -38,5 +41,8 @@ public interface VideoResourceMapper {
     @AutoFill(OperationType.UPDATE)
     boolean update(VideoResource videoResource);
 
-
+    /**
+     * 分页获取视频资源列表（支持按儿童ID筛选）
+     */
+    List<VideoResource> list(VideoResourcePageRequestDTO pageRequest);
 }

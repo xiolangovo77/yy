@@ -3,11 +3,13 @@ package com.ecnu.controller;
 import com.ecnu.annotation.RequireRole;
 import com.ecnu.common.BaseResponse;
 import com.ecnu.common.DeleteRequest;
+import com.ecnu.common.PageResponse;
 import com.ecnu.common.ResultUtils;
 import com.ecnu.exception.ErrorCode;
 import com.ecnu.exception.ThrowUtils;
 import com.ecnu.model.dto.AssessmentForm1SubmitDTO;
 import com.ecnu.model.dto.AssessmentForm2SubmitDTO;
+import com.ecnu.model.dto.AssessmentTaskPageRequestDTO;
 import com.ecnu.model.dto.AssessmentTaskPublishDTO;
 import com.ecnu.model.enums.RoleEnum;
 import com.ecnu.model.vo.AssessmentForm1VO;
@@ -28,6 +30,19 @@ public class AssessmentTaskController {
 
     @Resource
     private AssessmentTaskService assessmentTaskService;
+
+    /**
+     * 分页获取评估任务列表
+     */
+    @PostMapping("/list")
+    @Operation(summary = "分页获取评估任务列表")
+    @RequireRole({RoleEnum.DOCTOR, RoleEnum.ADMIN})
+    public BaseResponse<PageResponse> list(@RequestBody AssessmentTaskPageRequestDTO pageRequest) {
+        log.info("分页获取评估任务：{}", pageRequest);
+        ThrowUtils.throwIf(pageRequest == null, ErrorCode.PARAMS_ERROR);
+        PageResponse result = assessmentTaskService.list(pageRequest);
+        return ResultUtils.success(result);
+    }
 
     /**
      * 发布评估任务

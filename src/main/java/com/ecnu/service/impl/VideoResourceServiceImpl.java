@@ -5,18 +5,25 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.ecnu.common.DefaultValue;
 import com.ecnu.common.DeleteRequest;
+import com.ecnu.common.PageResponse;
 import com.ecnu.context.BaseContext;
 import com.ecnu.exception.BusinessException;
 import com.ecnu.exception.ErrorCode;
 import com.ecnu.exception.ThrowUtils;
 import com.ecnu.mapper.VideoResourceMapper;
 import com.ecnu.model.dto.VideoResourceAddDTO;
+import com.ecnu.model.dto.VideoResourcePageRequestDTO;
 import com.ecnu.model.dto.VideoResourceUpdateDTO;
 import com.ecnu.model.entity.VideoResource;
 import com.ecnu.model.vo.VideoResourceVO;
 import com.ecnu.service.VideoResourceService;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class VideoResourceServiceImpl implements VideoResourceService {
@@ -94,6 +101,41 @@ public class VideoResourceServiceImpl implements VideoResourceService {
         VideoResourceVO videoResourceVO = new VideoResourceVO();
         BeanUtil.copyProperties(videoResource, videoResourceVO);
         return videoResourceVO;
+    }
+
+    /**
+     * 分页获取视频资源列表
+     */
+    @Override
+    public PageResponse list(VideoResourcePageRequestDTO pageRequest) {
+        int current = pageRequest.getCurrent();
+        ThrowUtils.throwIf(current < 1, ErrorCode.PARAMS_ERROR, "页码必须大于0");
+        int pageSize = pageRequest.getPageSize();
+        ThrowUtils.throwIf(pageSize < 1, ErrorCode.PARAMS_ERROR, "页面大小必须大于0");
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "页面大小必须小于20");
+        String sortField = pageRequest.getSortField();
+        if (StrUtil.hasBlank(sortField)) {
+            sortField = DefaultValue.DEFAULT_SORT_Field;
+            pageRequest.setSortField(sortField);
+        }
+        String sortOrder = pageRequest.getSortOrder();
+        if (sortOrder == null || sortOrder.isEmpty()) {
+            sortOrder = DefaultValue.DEFAULT_SORT_ORDER;
+            pageRequest.setSortOrder(sortOrder);
+        }
+        ThrowUtils.throwIf(!("ascend".equalsIgnoreCase(sortOrder) || "descend".equalsIgnoreCase(sortOrder)),
+                ErrorCode.PARAMS_ERROR, "排序仅支持ascend/descend");
+        pageRequest.setSortOrder(sortOrder.equalsIgnoreCase("ascend") ? "ASC" : "DESC");
+
+        PageHelper.startPage(current, pageSize);
+        List<VideoResource> list = videoResourceMapper.list(pageRequest);
+        ThrowUtils.throwIf(list == null, ErrorCode.OPERATION_ERROR);
+
+        List<VideoResourceVO> voList = list.stream()
+                .map(v -> BeanUtil.toBean(v, VideoResourceVO.class))
+                .collect(Collectors.toList());
+        PageInfo<VideoResourceVO> page = new PageInfo<>(voList);
+        return new PageResponse(page.getTotal(), page.getList());
     }
 
     /**
