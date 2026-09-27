@@ -26,23 +26,25 @@
       <el-step title="阶段二" description="综合诊断确认" />
     </el-steps>
 
+    <el-alert v-if="formLoadError" :title="formLoadError" type="error" :closable="false" show-icon style="margin-bottom: 20px">
+      <el-button size="small" :loading="taskLoading" @click="loadTask">重新加载</el-button>
+    </el-alert>
+
     <!-- ==================== 阶段一：左视频 + 右表单 ==================== -->
     <el-row v-if="taskInfo.currentStep === 1" :gutter="20">
       <!-- 左侧：视频 -->
       <el-col :span="12">
-        <el-card shadow="never">
+        <el-card shadow="never" v-loading="videosLoading">
           <template #header>
             <div style="display: flex; align-items: center; justify-content: space-between">
-              <span class="form-title">诊断视频</span>
-              <el-select v-model="selectedVideoUrl" placeholder="选择视频" size="small" style="width: 220px">
-                <el-option v-for="v in videoList" :key="v.videoUrl" :label="v.videoName" :value="v.videoUrl" />
-              </el-select>
+              <span class="form-title">主视频</span>
+              <el-tag v-if="mainVideo" size="small">{{ mainVideo.videoName }}</el-tag>
             </div>
           </template>
-          <div v-if="currentVideo" style="background: #000; border-radius: 4px; overflow: hidden">
-            <video :key="currentVideo.videoUrl" :src="currentVideo.videoUrl" controls style="width: 100%; max-height: 400px" />
+          <div v-if="mainVideo" class="main-video-player">
+            <video :key="mainVideo.videoUrl" :src="mainVideo.videoUrl" controls preload="metadata" />
           </div>
-          <el-empty v-else description="该儿童暂无关联视频" />
+          <el-empty v-else-if="!videosLoading" :description="videosError || '暂无以 main 开头的主视频，请联系管理员上传'" />
         </el-card>
       </el-col>
 
@@ -50,7 +52,7 @@
       <el-col :span="12">
         <el-card shadow="never">
           <template #header><span class="form-title">阶段一：初步筛查评估</span></template>
-          <el-form ref="form1Ref" :model="form1" :rules="form1Rules" label-width="100px" size="default">
+          <el-form ref="form1Ref" :model="form1" :rules="form1Rules" :disabled="taskLoading || !!formLoadError || form1Submitting" label-width="100px" size="default">
             <el-form-item label="疾病判定" prop="diseaseType">
               <el-select v-model="form1.diseaseType" placeholder="请选择疾病判定结果" style="width: 100%">
                 <el-option label="ASD - 自闭症谱系障碍" value="ASD" />
@@ -86,8 +88,21 @@
       </el-col>
     </el-row>
 
-    <!-- ==================== 阶段二：全宽报告查看器 + 评估表单 ==================== -->
+    <!-- ==================== 阶段二：主视频、报告与评估表单 ==================== -->
     <template v-if="taskInfo.currentStep === 2 && taskInfo.taskStatus !== 2">
+      <el-card shadow="never" v-loading="videosLoading" style="margin-bottom: 20px">
+        <template #header>
+          <div class="reference-header">
+            <span class="form-title">主视频回看</span>
+            <el-tag v-if="mainVideo" size="small">{{ mainVideo.videoName }}</el-tag>
+          </div>
+        </template>
+        <div v-if="mainVideo" class="main-video-player">
+          <video :key="mainVideo.videoUrl" :src="mainVideo.videoUrl" controls preload="metadata" />
+        </div>
+        <el-empty v-else-if="!videosLoading" :description="videosError || '暂无以 main 开头的主视频，请联系管理员上传'" :image-size="60" />
+      </el-card>
+
       <!-- 报告查看器（全宽） -->
       <ReportViewer v-if="mdText" :md="mdText" :videos="videoList" style="margin-bottom: 20px" />
       <el-card v-else shadow="never" style="margin-bottom: 20px">
@@ -98,7 +113,7 @@
       <!-- 阶段二评估表单 -->
       <el-card shadow="never">
         <template #header><span class="form-title">阶段二：综合诊断确认</span></template>
-        <el-form ref="form2Ref" :model="form2" :rules="form2Rules" label-width="100px" size="default">
+        <el-form ref="form2Ref" :model="form2" :rules="form2Rules" :disabled="taskLoading || !!formLoadError || form2Submitting" label-width="100px" size="default">
           <el-form-item label="疾病判定" prop="diseaseType">
             <el-select v-model="form2.diseaseType" placeholder="请选择疾病判定结果" style="width: 100%">
               <el-option label="ASD - 自闭症谱系障碍" value="ASD" />
@@ -153,7 +168,8 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getTaskById, getForm1ByTaskId, getForm2ByTaskId, submitForm1 as submitForm1Api, submitForm2 as submitForm2Api } from '@/api/task'
 import { getChildById } from '@/api/child'
-import { getVideoList } from '@/api/video'
+import { getAllChildVideos } from '@/api/video'
+import { isMainVideoName } from '@/utils/video'
 import { getReportList } from '@/api/report'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ReportViewer from '@/components/ReportViewer.vue'
@@ -164,10 +180,13 @@ const router = useRouter()
 const taskLoading = ref(false)
 const childName = ref('')
 const videoList = ref([]) // [{ videoName, videoUrl }]
-const selectedVideoUrl = ref('')
-const currentVideo = computed(() => videoList.value.find(v => v.videoUrl === selectedVideoUrl.value) || videoList.value[0] || null)
+const mainVideo = computed(() => videoList.value.find(video => isMainVideoName(video.videoName)) || null)
+const videosLoading = ref(false)
+const videosError = ref('')
+const formLoadError = ref('')
 const mdText = ref('')
 const reportLoading = ref(false)
+let resourceLoadVersion = 0
 
 const form1Submitting = ref(false)
 const form2Submitting = ref(false)
@@ -212,76 +231,83 @@ function statusText(s) {
 }
 function goBack() { router.push('/doctor/dashboard') }
 
-async function loadChildResources(childId) {
-  // 加载该儿童的全部任务视频（action1.mp4 / action2.mp4 / ...）
-  // 注意：后端 pageSize 上限为 20（"页面大小必须小于20"），一个儿童最多几个任务视频，20 足够
+async function loadChildResources(childId, stage) {
+  const version = ++resourceLoadVersion
+  videoList.value = []
+  videosError.value = ''
+  videosLoading.value = true
+  mdText.value = ''
+  reportLoading.value = stage === 2
   try {
-    const vRes = await getVideoList({ current: 1, pageSize: 20, childId })
-    const videos = vRes.data?.records || []
-    videoList.value = videos.map(v => ({ videoName: v.videoName, videoUrl: v.videoUrl }))
-    selectedVideoUrl.value = videoList.value[0]?.videoUrl || ''
-  } catch (e) { videoList.value = []; selectedVideoUrl.value = '' }
+    // 阶段一由接口仅返回 main 视频；阶段二完整加载报告证据视频及主视频。
+    const videos = await getAllChildVideos(childId, { mainOnly: stage === 1 })
+    if (version !== resourceLoadVersion) return
+    videoList.value = videos.map(video => ({ videoName: video.videoName, videoUrl: video.videoUrl }))
+  } catch (e) {
+    if (version === resourceLoadVersion) videosError.value = '视频加载失败，请刷新页面重试'
+  } finally {
+    if (version === resourceLoadVersion) videosLoading.value = false
+  }
 
-  // 加载报告 MD 原文
-  reportLoading.value = true
+  if (stage !== 2 || version !== resourceLoadVersion) return
   try {
     const rRes = await getReportList({ current: 1, pageSize: 1, childId })
     const reports = rRes.data?.records || []
     if (reports.length > 0) {
-      const url = reports[0].reportUrl
-      try {
-        const mdRes = await fetch(url)
-        if (mdRes.ok) mdText.value = await mdRes.text()
-      } catch (e) { mdText.value = '' }
+      const mdRes = await fetch(reports[0].reportUrl)
+      if (mdRes.ok) {
+        const text = await mdRes.text()
+        if (version === resourceLoadVersion) mdText.value = text
+      }
     }
-  } catch (e) { mdText.value = '' }
-  reportLoading.value = false
+  } catch (e) {
+    if (version === resourceLoadVersion) mdText.value = ''
+  } finally {
+    if (version === resourceLoadVersion) reportLoading.value = false
+  }
+}
+
+async function loadStageOne(taskId) {
+  const res = await getForm1ByTaskId(taskId)
+  if (res.data) {
+    form1.diseaseType = res.data.diseaseType || ''
+    form1.confidence = res.data.confidence ?? 0
+    form1.diagnosticBasis = res.data.diagnosticBasis || ''
+    form1.doctorRemark = res.data.doctorRemark || ''
+  }
 }
 
 async function loadTask() {
   const taskId = route.params.taskId
   taskLoading.value = true
+  formLoadError.value = ''
   try {
     const taskRes = await getTaskById(taskId)
     Object.assign(taskInfo, taskRes.data)
 
-    // 儿童姓名
+    const resourceLoads = [loadStageOne(taskId)]
     if (taskInfo.childId) {
-      try {
-        const childRes = await getChildById(taskInfo.childId)
-        childName.value = childRes.data?.childName || ''
-      } catch (e) {}
-      // 视频 + 报告
-      loadChildResources(taskInfo.childId)
+      // 视频及报告独立显示加载状态，不阻塞已提交表单的回显。
+      loadChildResources(taskInfo.childId, taskInfo.currentStep)
+      resourceLoads.push(getChildById(taskInfo.childId).then(res => {
+        childName.value = res.data?.childName || ''
+      }).catch(() => { childName.value = '' }))
     }
+    await Promise.all(resourceLoads)
 
-    // 回显阶段一
-    if (taskInfo.currentStep >= 1) {
-      try {
-        const r = await getForm1ByTaskId(taskId)
-        if (r.data) {
-          form1.diseaseType = r.data.diseaseType || ''
-          form1.confidence = r.data.confidence ?? 0
-          form1.diagnosticBasis = r.data.diagnosticBasis || ''
-          form1.doctorRemark = r.data.doctorRemark || ''
-        }
-      } catch (e) {}
-    }
-
-    // 回显阶段二
+    // 阶段二未填写的三项直接带入阶段一结果；已有阶段二值优先保留，0 也是有效值。
     if (taskInfo.currentStep >= 2) {
-      try {
-        const r = await getForm2ByTaskId(taskId)
-        if (r.data) {
-          form2.diseaseType = r.data.diseaseType || ''
-          form2.confidence = r.data.confidence ?? 0
-          form2.diagnosticBasis = r.data.diagnosticBasis || ''
-          form2.finalConclusion = r.data.finalConclusion || ''
-          form2.doctorRemark = r.data.doctorRemark || ''
-        }
-      } catch (e) {}
+      const res = await getForm2ByTaskId(taskId)
+      const saved = res.data || {}
+      form2.diseaseType = saved.diseaseType || form1.diseaseType
+      form2.confidence = saved.confidence ?? form1.confidence
+      form2.diagnosticBasis = saved.diagnosticBasis || form1.diagnosticBasis
+      form2.finalConclusion = saved.finalConclusion || ''
+      form2.doctorRemark = saved.doctorRemark || ''
     }
-  } catch (e) {} finally { taskLoading.value = false }
+  } catch (e) {
+    formLoadError.value = '评估表单加载失败，请重新加载后继续填写'
+  } finally { taskLoading.value = false }
 }
 
 async function submitForm1() {
@@ -333,4 +359,7 @@ onMounted(() => loadTask())
   font-weight: 600;
   font-size: 16px;
 }
+.reference-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.main-video-player { background: #000; border-radius: 4px; overflow: hidden; }
+.main-video-player video { display: block; width: 100%; max-height: 400px; }
 </style>

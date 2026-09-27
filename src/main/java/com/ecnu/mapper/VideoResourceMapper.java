@@ -5,6 +5,7 @@ import com.ecnu.model.dto.VideoResourcePageRequestDTO;
 import com.ecnu.model.entity.VideoResource;
 import com.ecnu.model.enums.OperationType;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -32,6 +33,8 @@ public interface VideoResourceMapper {
      * @return
      */
     VideoResource getById(Long id);
+
+    long countMainVideos(@Param("childId") Long childId, @Param("excludeId") Long excludeId);
 
     /**
      * 修改视频资源

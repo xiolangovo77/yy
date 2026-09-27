@@ -11,6 +11,7 @@ import com.ecnu.exception.BusinessException;
 import com.ecnu.exception.ErrorCode;
 import com.ecnu.exception.ThrowUtils;
 import com.ecnu.mapper.VideoResourceMapper;
+import com.ecnu.mapper.ChildInfoMapper;
 import com.ecnu.model.dto.VideoResourceAddDTO;
 import com.ecnu.model.dto.VideoResourcePageRequestDTO;
 import com.ecnu.model.dto.VideoResourceUpdateDTO;
@@ -21,10 +22,12 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.ecnu.service.ChildDoctorBinding;
 import com.ecnu.service.ChildInfoService;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +35,9 @@ public class VideoResourceServiceImpl implements VideoResourceService {
 
     @Resource
     private VideoResourceMapper videoResourceMapper;
+
+    @Resource
+    private ChildInfoMapper childInfoMapper;
 
     @Resource
     private ChildDoctorBinding childDoctorBinding;
@@ -44,6 +50,7 @@ public class VideoResourceServiceImpl implements VideoResourceService {
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean add(VideoResourceAddDTO videoResourceAddDTO) {
         // 参数校验
         // childId（必填）
@@ -55,12 +62,9 @@ public class VideoResourceServiceImpl implements VideoResourceService {
         if (videoUrl.length() > 512) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "视频存储地址不能超过512位");
         }
-        // videoName（默认值：诊断视频）
-        String videoName = videoResourceAddDTO.getVideoName();
-        if (StrUtil.hasBlank(videoName)) {
-            videoName = DefaultValue.DEFAULT_VIDEO_NAME;
-            videoResourceAddDTO.setVideoName(videoName);
-        }
+        String videoName = normalizeVideoName(videoResourceAddDTO.getVideoName());
+        videoResourceAddDTO.setVideoName(videoName);
+        validateMainVideo(childId, videoName, null);
 
         VideoResource videoResource = new VideoResource();
         BeanUtil.copyProperties(videoResourceAddDTO, videoResource);
@@ -153,6 +157,7 @@ public class VideoResourceServiceImpl implements VideoResourceService {
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean update(VideoResourceUpdateDTO videoResourceUpdateDTO) {
         // 校验参数
         Long id = videoResourceUpdateDTO.getId();
@@ -166,12 +171,9 @@ public class VideoResourceServiceImpl implements VideoResourceService {
         if (videoUrl.length() > 512) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "视频存储地址不能超过512位");
         }
-        // videoName（默认值：诊断视频）
-        String videoName = videoResourceUpdateDTO.getVideoName();
-        if (StrUtil.hasBlank(videoName)) {
-            videoName = DefaultValue.DEFAULT_VIDEO_NAME;
-            videoResourceUpdateDTO.setVideoName(videoName);
-        }
+        String videoName = normalizeVideoName(videoResourceUpdateDTO.getVideoName());
+        videoResourceUpdateDTO.setVideoName(videoName);
+        validateMainVideo(childId, videoName, id);
 
         VideoResource videoResource = new VideoResource();
         BeanUtil.copyProperties(videoResourceUpdateDTO, videoResource);
@@ -183,4 +185,23 @@ public class VideoResourceServiceImpl implements VideoResourceService {
     }
 
 
+    private String normalizeVideoName(String name) {
+        String normalized = StrUtil.hasBlank(name) ? DefaultValue.DEFAULT_VIDEO_NAME : name.trim();
+        ThrowUtils.throwIf(normalized.length() > 128, ErrorCode.PARAMS_ERROR, "视频名称不能超过128位");
+        return normalized;
+    }
+
+    private void validateMainVideo(Long childId, String videoName, Long excludeId) {
+        // 同一儿童的视频新增、改名和转移串行校验，避免并发创建多个 main 视频。
+        ThrowUtils.throwIf(childInfoMapper.getByIdForUpdate(childId) == null,
+                ErrorCode.NOT_FOUND_ERROR, "儿童信息不存在");
+        if (excludeId != null) {
+            ThrowUtils.throwIf(videoResourceMapper.getById(excludeId) == null,
+                    ErrorCode.NOT_FOUND_ERROR, "视频资源不存在");
+        }
+        if (videoName.toLowerCase(Locale.ROOT).startsWith("main")) {
+            ThrowUtils.throwIf(videoResourceMapper.countMainVideos(childId, excludeId) > 0,
+                    ErrorCode.PARAMS_ERROR, "该儿童已有以 main 开头的主视频，请编辑原视频或使用其他名称");
+        }
+    }
 }

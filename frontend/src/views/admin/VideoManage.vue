@@ -62,7 +62,8 @@
           </el-select>
         </el-form-item>
         <el-form-item label="视频名称" prop="videoName">
-          <el-input v-model="form.videoName" placeholder="请输入视频名称" />
+          <el-input v-model="form.videoName" placeholder="默认 main.mp4" maxlength="128" />
+          <div class="el-upload__tip">以 main 开头的视频为主视频（不区分大小写），每个儿童只能有一个。其他视频请使用其他名称，如 action1.mp4。</div>
         </el-form-item>
         <el-form-item label="视频文件" v-if="!isEdit">
           <el-upload
@@ -106,6 +107,7 @@ import { uploadMP4 } from '@/api/common'
 import { getChildList } from '@/api/child'
 import { getDoctorList } from '@/api/doctor'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { DEFAULT_VIDEO_NAME, isMainVideoName } from '@/utils/video'
 
 const loading = ref(false)
 const tableData = ref([])
@@ -123,7 +125,7 @@ const videoRef = ref(null)
 const search = reactive({ childName: '' })
 const pagination = reactive({ current: 1, pageSize: 10, total: 1 })
 
-const form = reactive({ id: null, childId: '', videoName: '诊断视频', videoUrl: '' })
+const form = reactive({ id: null, childId: '', videoName: DEFAULT_VIDEO_NAME, videoUrl: '' })
 const selectedFile = ref(null)
 
 const childNameMap = ref({})
@@ -132,7 +134,10 @@ const childOptions = ref([])
 
 const rules = {
   childId: [{ required: true, message: '请选择儿童', trigger: 'change' }],
-  videoName: [{ required: true, message: '请输入视频名称', trigger: 'blur' }],
+  videoName: [
+    { required: true, message: '请输入视频名称', trigger: 'blur' },
+    { max: 128, message: '视频名称不能超过128位', trigger: 'blur' }
+  ],
   videoUrl: [{ required: true, message: '请输入视频URL', trigger: 'blur' }]
 }
 
@@ -178,7 +183,7 @@ async function fetchData() {
 function resetSearch() { search.childName = ''; fetchData() }
 
 function resetForm() {
-  form.id = null; form.childId = ''; form.videoName = '诊断视频'; form.videoUrl = ''
+  form.id = null; form.childId = ''; form.videoName = DEFAULT_VIDEO_NAME; form.videoUrl = ''
   selectedFile.value = null; fileList.value = []
 }
 
@@ -194,31 +199,38 @@ function handleEdit(row) {
 function handleFileChange(file) { selectedFile.value = file.raw }
 
 async function handleSubmit() {
-  if (!isEdit.value) {
-    if (!selectedFile.value) { ElMessage.warning('请选择视频文件'); return }
-    if (!form.childId) { ElMessage.warning('请选择关联儿童'); return }
-    if (!form.videoName) { ElMessage.warning('请输入视频名称'); return }
-
-    uploading.value = true; submitting.value = true
-    try {
+  if (submitting.value) return
+  form.videoName = String(form.videoName || '').trim()
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid || submitting.value) return
+  if (!isEdit.value && !selectedFile.value) {
+    ElMessage.warning('请选择视频文件')
+    return
+  }
+  submitting.value = true
+  try {
+    // 上传文件前先提示重复主视频，后端还会在保存时做并发校验。
+    if (isMainVideoName(form.videoName)) {
+      const res = await getVideoList({ childId: form.childId, mainOnly: true, current: 1, pageSize: 20 })
+      const duplicate = (res.data?.records || []).some(video => String(video.id) !== String(form.id))
+      if (duplicate) {
+        ElMessage.warning('该儿童已有以 main 开头的主视频，请编辑原视频或使用其他名称')
+        return
+      }
+    }
+    if (!isEdit.value) {
+      uploading.value = true
       const uploadRes = await uploadMP4(selectedFile.value)
       form.videoUrl = uploadRes.data
       await addVideo({ childId: form.childId, videoUrl: form.videoUrl, videoName: form.videoName })
       ElMessage.success('上传并保存成功')
-      dialogVisible.value = false
-      fetchData()
-    } catch (e) {} finally { uploading.value = false; submitting.value = false }
-  } else {
-    const valid = await formRef.value.validate().catch(() => false)
-    if (!valid) return
-    submitting.value = true
-    try {
+    } else {
       await updateVideo({ id: form.id, childId: form.childId, videoUrl: form.videoUrl, videoName: form.videoName })
       ElMessage.success('编辑成功')
-      dialogVisible.value = false
-      fetchData()
-    } catch (e) {} finally { submitting.value = false }
-  }
+    }
+    dialogVisible.value = false
+    fetchData()
+  } catch (e) {} finally { uploading.value = false; submitting.value = false }
 }
 
 function handlePreview(row) {

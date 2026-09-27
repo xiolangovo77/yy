@@ -3,7 +3,7 @@
 -- 自动创建并切换到 yy 数据库，无需额外建库或迁移脚本。
 -- 执行后会删除并重建以下 7 张业务表，清空全部现有业务数据。
 -- 初始管理员：账号 admin，密码 123456，角色 1，状态 1。
--- 已合并：儿童绑定医生、每个儿童仅一个未删除任务（删除后可重发）。
+-- 已合并：儿童绑定医生、每个儿童仅一个未删除任务及一个 main 主视频（删除后可重建）。
 -- 引擎：InnoDB  字符集：utf8mb4
 -- =============================================
 
@@ -64,12 +64,14 @@ CREATE TABLE `video_resource` (
                                   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                                   `child_id` bigint unsigned NOT NULL COMMENT '关联儿童ID',
                                   `video_url` varchar(512) NOT NULL COMMENT '视频存储地址',
-                                  `video_name` varchar(128) DEFAULT NULL COMMENT '视频名称',
+                                  `video_name` varchar(128) NOT NULL DEFAULT 'main.mp4' COMMENT '视频名称，以main开头为主视频',
                                   `upload_doctor_id` bigint unsigned DEFAULT NULL COMMENT '上传医生ID',
                                   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                                   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                                   `is_deleted` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '软删除标记 0-未删除 1-已删除',
+                                  `main_child_id` bigint unsigned GENERATED ALWAYS AS (CASE WHEN `is_deleted` = 0 AND LEFT(LOWER(TRIM(`video_name`)), 4) COLLATE utf8mb4_bin = 'main' THEN `child_id` ELSE NULL END) STORED,
                                   PRIMARY KEY (`id`),
+                                  UNIQUE KEY `uk_child_main_video` (`main_child_id`) COMMENT '每个儿童只能有一个未删除的main主视频',
                                   KEY `idx_child_id` (`child_id`) COMMENT '儿童ID索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='视频资源表';
 
