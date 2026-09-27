@@ -30,6 +30,9 @@ public class AssessmentTaskVO {
     @Schema(description = "完成状态 0-未开始 1-进行中 2-已完成")
     private Integer taskStatus;
 
+    @Schema(description = "是否已提交报告评价")
+    private Boolean feedbackSubmitted;
+
     @Schema(description = "当前步骤 1-第一阶段 2-第二阶段")
     private Integer currentStep;
 

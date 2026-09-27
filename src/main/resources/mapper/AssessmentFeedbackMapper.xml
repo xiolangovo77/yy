@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ecnu.mapper.AssessmentFeedbackMapper">
+    <insert id="add" parameterType="com.ecnu.model.entity.AssessmentFeedback">
+        INSERT INTO assessment_feedback
+            (id, task_id, child_id, doctor_id, core_problem_clarity, judgment_improvement,
+             observation_accuracy, suggestions, is_deleted, create_time, update_time)
+        VALUES (#{id}, #{taskId}, #{childId}, #{doctorId}, #{coreProblemClarity}, #{judgmentImprovement},
+                #{observationAccuracy}, #{suggestions}, #{isDeleted}, #{createTime}, #{updateTime})
+    </insert>
+    <select id="getByTaskId" resultType="com.ecnu.model.entity.AssessmentFeedback">
+        SELECT * FROM assessment_feedback WHERE task_id = #{taskId} AND is_deleted = 0
+    </select>
+    <select id="existsByTaskId" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM assessment_feedback WHERE task_id = #{taskId} AND is_deleted = 0)
+    </select>
+    <update id="deleteByTaskId">
+        UPDATE assessment_feedback SET is_deleted = 1, update_time = NOW()
+        WHERE task_id = #{taskId} AND is_deleted = 0
+    </update>
+</mapper>

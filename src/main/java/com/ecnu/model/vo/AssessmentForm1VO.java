@@ -36,6 +36,22 @@ public class AssessmentForm1VO {
     @Schema(description = "医生补充备注")
     private String doctorRemark;
 
+    @Schema(description = "社交回应（1-5分，严重程度递增）")
+    private Integer socialResponse;
+
+    @Schema(description = "眼神交流（1-5分，严重程度递增）")
+    private Integer eyeContact;
+
+    @Schema(description = "社会互惠性（1-5分，严重程度递增）")
+    private Integer socialReciprocity;
+
+    @Schema(description = "社会情绪表达（1-5分，严重程度递增）")
+    private Integer socialEmotionalExpression;
+
+    @Schema(description = "重复刻板或感觉异常行为")
+    private String repetitiveBehavior;
+
+
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
 

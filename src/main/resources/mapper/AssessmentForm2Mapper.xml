@@ -3,12 +3,12 @@
 <mapper namespace="com.ecnu.mapper.AssessmentForm2Mapper">
 
     <insert id="add" parameterType="com.ecnu.model.entity.AssessmentForm2">
-        INSERT INTO assessment_form2(id, task_id, child_id, disease_type, confidence, diagnostic_basis, final_conclusion, doctor_remark, is_deleted, create_time, update_time)
-        VALUES(#{id}, #{taskId}, #{childId}, #{diseaseType}, #{confidence}, #{diagnosticBasis}, #{finalConclusion}, #{doctorRemark}, #{isDeleted}, #{createTime}, #{updateTime})
+        INSERT INTO assessment_form2(id, task_id, child_id, disease_type, confidence, diagnostic_basis, final_conclusion, doctor_remark, report_usefulness, evidence_validity, fact_accuracy, is_deleted, create_time, update_time)
+        VALUES(#{id}, #{taskId}, #{childId}, #{diseaseType}, #{confidence}, #{diagnosticBasis}, #{finalConclusion}, #{doctorRemark}, #{reportUsefulness}, #{evidenceValidity}, #{factAccuracy}, #{isDeleted}, #{createTime}, #{updateTime})
     </insert>
 
     <select id="getByTaskId" resultType="com.ecnu.model.entity.AssessmentForm2">
-        select id, task_id, child_id, disease_type, confidence, diagnostic_basis, final_conclusion, doctor_remark, is_deleted, create_time, update_time
+        select id, task_id, child_id, disease_type, confidence, diagnostic_basis, final_conclusion, doctor_remark, report_usefulness, evidence_validity, fact_accuracy, is_deleted, create_time, update_time
         from assessment_form2
         WHERE task_id = #{taskId} AND is_deleted = 0
     </select>
@@ -16,6 +16,16 @@
     <update id="update" parameterType="com.ecnu.model.entity.AssessmentForm2">
         UPDATE assessment_form2
         <set>
+            <if test="reportUsefulness != null">
+                report_usefulness = #{reportUsefulness},
+            </if>
+            <if test="evidenceValidity != null">
+                evidence_validity = #{evidenceValidity},
+            </if>
+            <if test="factAccuracy != null">
+                fact_accuracy = #{factAccuracy},
+            </if>
+
             <if test="diseaseType != null and diseaseType != ''">
                 disease_type = #{diseaseType},
             </if>

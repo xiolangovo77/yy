@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ecnu.mapper.ProjectIntroductionMapper">
+    <select id="get" resultType="com.ecnu.model.entity.ProjectIntroduction">
+        SELECT id, title, content, update_time FROM project_introduction WHERE id = 1
+    </select>
+    <insert id="save" parameterType="com.ecnu.model.entity.ProjectIntroduction">
+        INSERT INTO project_introduction (id, title, content, update_time)
+        VALUES (1, #{title}, #{content}, NOW())
+        ON DUPLICATE KEY UPDATE title = #{title}, content = #{content}, update_time = NOW()
+    </insert>
+</mapper>

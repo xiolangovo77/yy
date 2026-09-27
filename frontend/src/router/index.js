@@ -33,6 +33,12 @@ const routes = [
         meta: { title: '管理首页' }
       },
       {
+        path: 'introduction',
+        name: 'AdminIntroduction',
+        component: () => import('@/views/admin/IntroductionManage.vue'),
+        meta: { title: '项目介绍管理' }
+      },
+      {
         path: 'doctors',
         name: 'DoctorManage',
         component: () => import('@/views/admin/DoctorManage.vue'),
@@ -80,6 +86,12 @@ const routes = [
         name: 'DoctorDashboard',
         component: () => import('@/views/doctor/Dashboard.vue'),
         meta: { title: '我的任务' }
+      },
+      {
+        path: 'introduction',
+        name: 'DoctorIntroduction',
+        component: () => import('@/views/ProjectIntroduction.vue'),
+        meta: { title: '项目介绍' }
       },
       {
         path: 'profile',

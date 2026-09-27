@@ -22,6 +22,10 @@
             <el-icon><UserFilled /></el-icon>
             <span>个人主页</span>
           </el-menu-item>
+          <el-menu-item index="/doctor/introduction">
+            <el-icon><Document /></el-icon>
+            <span>项目介绍</span>
+          </el-menu-item>
         </el-menu>
       </div>
       <div class="header-right">

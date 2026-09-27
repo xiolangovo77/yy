@@ -58,9 +58,9 @@
               继续评估
             </el-button>
             <!-- 已完成：查看 -->
-            <el-tag v-if="row.taskStatus === 2" type="success" size="small">
-              已完成
-            </el-tag>
+            <el-button v-if="row.taskStatus === 2" :type="row.feedbackSubmitted ? 'success' : 'primary'" size="small" @click="handleAssess(row)">
+              {{ row.feedbackSubmitted ? '查看评价' : '填写评价' }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>

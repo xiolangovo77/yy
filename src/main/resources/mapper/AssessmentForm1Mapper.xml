@@ -3,12 +3,12 @@
 <mapper namespace="com.ecnu.mapper.AssessmentForm1Mapper">
 
     <insert id="add" parameterType="com.ecnu.model.entity.AssessmentForm1">
-        INSERT INTO assessment_form1(id, task_id, child_id, disease_type, confidence, diagnostic_basis, doctor_remark, is_deleted, create_time, update_time)
-        VALUES(#{id}, #{taskId}, #{childId}, #{diseaseType}, #{confidence}, #{diagnosticBasis}, #{doctorRemark}, #{isDeleted}, #{createTime}, #{updateTime})
+        INSERT INTO assessment_form1(id, task_id, child_id, disease_type, confidence, diagnostic_basis, doctor_remark, social_response, eye_contact, social_reciprocity, social_emotional_expression, repetitive_behavior, is_deleted, create_time, update_time)
+        VALUES(#{id}, #{taskId}, #{childId}, #{diseaseType}, #{confidence}, #{diagnosticBasis}, #{doctorRemark}, #{socialResponse}, #{eyeContact}, #{socialReciprocity}, #{socialEmotionalExpression}, #{repetitiveBehavior}, #{isDeleted}, #{createTime}, #{updateTime})
     </insert>
 
     <select id="getByTaskId" resultType="com.ecnu.model.entity.AssessmentForm1">
-        select id, task_id, child_id, disease_type, confidence, diagnostic_basis, doctor_remark, is_deleted, create_time, update_time
+        select id, task_id, child_id, disease_type, confidence, diagnostic_basis, doctor_remark, social_response, eye_contact, social_reciprocity, social_emotional_expression, repetitive_behavior, is_deleted, create_time, update_time
         from assessment_form1
         WHERE task_id = #{taskId} AND is_deleted = 0
     </select>
@@ -16,6 +16,22 @@
     <update id="update" parameterType="com.ecnu.model.entity.AssessmentForm1">
         UPDATE assessment_form1
         <set>
+            <if test="socialResponse != null">
+                social_response = #{socialResponse},
+            </if>
+            <if test="eyeContact != null">
+                eye_contact = #{eyeContact},
+            </if>
+            <if test="socialReciprocity != null">
+                social_reciprocity = #{socialReciprocity},
+            </if>
+            <if test="socialEmotionalExpression != null">
+                social_emotional_expression = #{socialEmotionalExpression},
+            </if>
+            <if test="repetitiveBehavior != null">
+                repetitive_behavior = #{repetitiveBehavior},
+            </if>
+
             <if test="diseaseType != null and diseaseType != ''">
                 disease_type = #{diseaseType},
             </if>

@@ -14,6 +14,10 @@ import com.ecnu.mapper.AssessmentForm1Mapper;
 import com.ecnu.mapper.AssessmentForm2Mapper;
 import com.ecnu.mapper.AssessmentTaskMapper;
 import com.ecnu.mapper.ChildInfoMapper;
+import com.ecnu.mapper.AssessmentFeedbackMapper;
+import com.ecnu.model.entity.AssessmentFeedback;
+import com.ecnu.model.dto.AssessmentFeedbackSubmitDTO;
+import com.ecnu.model.vo.AssessmentFeedbackVO;
 import com.ecnu.model.entity.ChildInfo;
 import com.ecnu.service.ChildDoctorBinding;
 import com.ecnu.model.dto.AssessmentForm1SubmitDTO;
@@ -53,6 +57,45 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
 
     @Resource
     private AssessmentForm2Mapper assessmentForm2Mapper;
+
+    @Resource
+    private AssessmentFeedbackMapper assessmentFeedbackMapper;
+
+    @Override
+    public AssessmentFeedbackVO getFeedback(Long taskId) {
+        getById(taskId);
+        AssessmentFeedback feedback = assessmentFeedbackMapper.getByTaskId(taskId);
+        return feedback == null ? null : BeanUtil.toBean(feedback, AssessmentFeedbackVO.class);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean submitFeedback(AssessmentFeedbackSubmitDTO dto) {
+        ThrowUtils.throwIf(dto.getTaskId() == null, ErrorCode.PARAMS_ERROR, "任务ID不能为空");
+        requireFeedbackChoice(dto.getCoreProblemClarity(), "报告是否能让您快速找到患者核心问题");
+        requireFeedbackChoice(dto.getJudgmentImprovement(), "使用系统后是否能提高判断质量/效率");
+        requireFeedbackChoice(dto.getObservationAccuracy(), "报告中的观察事实是否准确");
+        ThrowUtils.throwIf(dto.getSuggestions() != null && dto.getSuggestions().length() > 2000,
+                ErrorCode.PARAMS_ERROR, "改进建议不能超过2000字");
+        AssessmentTask task = assessmentTaskMapper.getByIdForUpdate(dto.getTaskId());
+        ThrowUtils.throwIf(task == null, ErrorCode.NOT_FOUND_ERROR, "评估任务不存在");
+        childDoctorBinding.checkAssessmentAccess(task.getDoctorId());
+        ThrowUtils.throwIf(!Integer.valueOf(2).equals(task.getTaskStatus()),
+                ErrorCode.OPERATION_ERROR, "请先完成两个阶段的评估，再提交评价");
+        ThrowUtils.throwIf(assessmentFeedbackMapper.existsByTaskId(task.getId()),
+                ErrorCode.OPERATION_ERROR, "该任务已经提交评价，请勿重复提交");
+        AssessmentFeedback feedback = BeanUtil.toBean(dto, AssessmentFeedback.class);
+        feedback.setId(IdUtil.getSnowflakeNextId());
+        feedback.setChildId(task.getChildId());
+        feedback.setDoctorId(task.getDoctorId());
+        ThrowUtils.throwIf(!assessmentFeedbackMapper.add(feedback), ErrorCode.OPERATION_ERROR, "提交评价失败");
+        return true;
+    }
+
+    private void requireFeedbackChoice(String value, String question) {
+        ThrowUtils.throwIf(value == null || !List.of("符合", "一般", "不符合").contains(value),
+                ErrorCode.PARAMS_ERROR, question + "请选择符合、一般或不符合");
+    }
 
     /**
      * 发布评估任务（事务：task + form1 + form2 同步创建）
@@ -122,9 +165,7 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         AssessmentTask task = assessmentTaskMapper.getById(id);
         ThrowUtils.throwIf(task == null, ErrorCode.NOT_FOUND_ERROR, "评估任务不存在");
         childDoctorBinding.checkReadAccess(task.getDoctorId());
-        AssessmentTaskVO taskVO = new AssessmentTaskVO();
-        BeanUtil.copyProperties(task, taskVO);
-        return taskVO;
+        return toTaskVO(task);
     }
 
     /**
@@ -164,7 +205,7 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         // 封装结果：先用原始查询结果获取分页信息，再转换为 VO
         PageInfo<AssessmentTask> pageInfo = new PageInfo<>(list);
         List<AssessmentTaskVO> voList = list.stream()
-                .map(task -> BeanUtil.toBean(task, AssessmentTaskVO.class))
+                .map(this::toTaskVO)
                 .collect(Collectors.toList());
         return new PageResponse(pageInfo.getTotal(), voList);
     }
@@ -220,6 +261,7 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
 
         // 删除二阶段表单
         assessmentForm2Mapper.deleteByTaskId(id);
+        assessmentFeedbackMapper.deleteByTaskId(id);
 
         return true;
     }
@@ -266,6 +308,13 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         String diagnosticBasis = dto.getDiagnosticBasis();
         ThrowUtils.throwIf(StrUtil.hasBlank(diagnosticBasis), ErrorCode.PARAMS_ERROR, "诊断依据不能为空");
 
+        requireRating(dto.getSocialResponse(), "社交回应");
+        requireRating(dto.getEyeContact(), "眼神交流");
+        requireRating(dto.getSocialReciprocity(), "社会互惠性");
+        requireRating(dto.getSocialEmotionalExpression(), "社会情绪表达");
+        ThrowUtils.throwIf(StrUtil.isBlank(dto.getRepetitiveBehavior()), ErrorCode.PARAMS_ERROR, "请填写重复刻板或感觉异常行为，未观察到时请注明");
+        ThrowUtils.throwIf(dto.getRepetitiveBehavior().length() > 2000, ErrorCode.PARAMS_ERROR, "行为描述不能超过2000字");
+
         requireWritableTask(taskId, 1);
 
         // 更新一阶段表单
@@ -304,6 +353,10 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         String finalConclusion = dto.getFinalConclusion();
         ThrowUtils.throwIf(StrUtil.hasBlank(finalConclusion), ErrorCode.PARAMS_ERROR, "最终诊断结论不能为空");
 
+        requireRating(dto.getReportUsefulness(), "报告有用程度");
+        requireRating(dto.getEvidenceValidity(), "报告证据有效性");
+        requireRating(dto.getFactAccuracy(), "事实是否准确");
+
         requireWritableTask(taskId, 2);
 
         // 更新二阶段表单
@@ -317,8 +370,18 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         ThrowUtils.throwIf(!statusResult, ErrorCode.OPERATION_ERROR);
         return true;
     }
+    private AssessmentTaskVO toTaskVO(AssessmentTask task) {
+        AssessmentTaskVO vo = BeanUtil.toBean(task, AssessmentTaskVO.class);
+        vo.setFeedbackSubmitted(assessmentFeedbackMapper.existsByTaskId(task.getId()));
+        return vo;
+    }
+
+    private void requireRating(Integer score, String label) {
+        ThrowUtils.throwIf(score == null || score < 1 || score > 5, ErrorCode.PARAMS_ERROR, label + "必须为1-5分");
+    }
+
     private void requireWritableTask(Long taskId, int step) {
-        AssessmentTask task = assessmentTaskMapper.getById(taskId);
+        AssessmentTask task = assessmentTaskMapper.getByIdForUpdate(taskId);
         ThrowUtils.throwIf(task == null, ErrorCode.NOT_FOUND_ERROR, "评估任务不存在");
         childDoctorBinding.checkAssessmentAccess(task.getDoctorId());
         ThrowUtils.throwIf(!Integer.valueOf(1).equals(task.getTaskStatus())

@@ -53,4 +53,7 @@
         UPDATE assessment_task SET doctor_id = #{param2}, update_time = NOW()
         WHERE child_id = #{param1} AND task_status = 0 AND is_deleted = 0
     </update>
+    <select id="getByIdForUpdate" resultType="com.ecnu.model.entity.AssessmentTask">
+        SELECT * FROM assessment_task WHERE id = #{id} AND is_deleted = 0 FOR UPDATE
+    </select>
 </mapper>

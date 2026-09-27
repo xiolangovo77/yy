@@ -39,6 +39,14 @@
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column label="报告评价" width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.taskStatus === 2" :type="row.feedbackSubmitted ? 'success' : 'warning'" size="small">
+              {{ row.feedbackSubmitted ? '已评价' : '待评价' }}
+            </el-tag>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="180">
           <template #default="{ row }">
             <el-button type="primary" size="small" link @click="handleViewResult(row)">查看评估</el-button>
@@ -96,16 +104,26 @@
       <div v-loading="resultLoading">
         <el-descriptions v-if="form1Data.diseaseType || form2Data.diseaseType" :column="2" border size="small">
           <el-descriptions-item label="阶段一疾病判定">{{ form1Data.diseaseType || '--' }}</el-descriptions-item>
-          <el-descriptions-item label="阶段一诊断信心">{{ form1Data.confidence != null ? form1Data.confidence + '%' : '--' }}</el-descriptions-item>
+          <el-descriptions-item label="阶段一诊断信心">{{ form1Data.confidence ?? '--' }}</el-descriptions-item>
           <el-descriptions-item label="阶段一诊断依据" :span="2">{{ form1Data.diagnosticBasis || '--' }}</el-descriptions-item>
+          <el-descriptions-item v-for="field in stageOneScores" :key="field.key" :label="field.label + '（1–5分）'">
+            {{ form1Data[field.key] ?? '--' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="重复刻板或感觉异常行为" :span="2">
+            <span style="white-space: pre-wrap; overflow-wrap: anywhere">{{ form1Data.repetitiveBehavior || '--' }}</span>
+          </el-descriptions-item>
           <el-descriptions-item label="阶段二疾病判定">{{ form2Data.diseaseType || '--' }}</el-descriptions-item>
-          <el-descriptions-item label="阶段二诊断信心">{{ form2Data.confidence != null ? form2Data.confidence + '%' : '--' }}</el-descriptions-item>
+          <el-descriptions-item label="阶段二诊断信心">{{ form2Data.confidence ?? '--' }}</el-descriptions-item>
           <el-descriptions-item label="阶段二诊断依据" :span="2">{{ form2Data.diagnosticBasis || '--' }}</el-descriptions-item>
+          <el-descriptions-item v-for="field in stageTwoScores" :key="field.key" :label="field.label + '（1–5分）'">
+            {{ form2Data[field.key] ?? '--' }}
+          </el-descriptions-item>
           <el-descriptions-item label="最终诊断结论" :span="2">
             <span style="font-weight: 600; color: #e6a23c">{{ form2Data.finalConclusion || '--' }}</span>
           </el-descriptions-item>
         </el-descriptions>
         <el-empty v-else description="该任务暂未开始评估" :image-size="80" />
+        <TaskFeedback v-if="resultTask?.taskStatus === 2" :key="resultTask.id" :task-id="resultTask.id" readonly style="margin-top: 20px" />
       </div>
     </el-dialog>
   </div>
@@ -117,6 +135,8 @@ import { getTaskList, publishTask, deleteTask, getForm1ByTaskId, getForm2ByTaskI
 import { getAllChildOptions } from '@/api/child'
 import { getAllDoctorOptions } from '@/api/doctor'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import TaskFeedback from '@/components/TaskFeedback.vue'
+import { stageOneScores, stageTwoScores, emptyScores } from '@/utils/assessmentFields'
 
 const loading = ref(false)
 const tableData = ref([])
@@ -132,8 +152,9 @@ const doctorNameMap = ref({})
 
 const resultVisible = ref(false)
 const resultLoading = ref(false)
-const form1Data = reactive({ diseaseType: '', confidence: null, diagnosticBasis: '' })
-const form2Data = reactive({ diseaseType: '', confidence: null, diagnosticBasis: '', finalConclusion: '' })
+const resultTask = ref(null)
+const form1Data = reactive({ diseaseType: '', confidence: null, diagnosticBasis: '', ...emptyScores(stageOneScores), repetitiveBehavior: '' })
+const form2Data = reactive({ diseaseType: '', confidence: null, diagnosticBasis: '', finalConclusion: '', ...emptyScores(stageTwoScores) })
 
 const publishForm = reactive({ childId: null, taskNo: '' })
 const selectedChild = computed(() => childOptions.value.find(child => child.id === publishForm.childId))
@@ -225,7 +246,7 @@ async function doPublish() {
 }
 
 function handleDelete(row) {
-  ElMessageBox.confirm('确定要删除该评估任务吗？关联的表单也将被删除，删除后可以为该儿童重新发布任务。', '警告', {
+  ElMessageBox.confirm('确定要删除该评估任务吗？关联的评估表单和报告评价也将被删除，删除后可以为该儿童重新发布任务。', '警告', {
     confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'error'
   }).then(async () => {
     try {
@@ -237,18 +258,24 @@ function handleDelete(row) {
 }
 
 async function handleViewResult(row) {
+  resultTask.value = { ...row }
   resultVisible.value = true
   resultLoading.value = true
   form1Data.diseaseType = ''; form1Data.confidence = null; form1Data.diagnosticBasis = ''
   form2Data.diseaseType = ''; form2Data.confidence = null; form2Data.diagnosticBasis = ''; form2Data.finalConclusion = ''
+  Object.assign(form1Data, emptyScores(stageOneScores), { repetitiveBehavior: '' })
+  Object.assign(form2Data, emptyScores(stageTwoScores))
   try {
     const [f1, f2] = await Promise.all([
       getForm1ByTaskId(row.id).catch(() => ({ data: null })),
       getForm2ByTaskId(row.id).catch(() => ({ data: null }))
     ])
+    if (resultTask.value?.id !== row.id) return
     if (f1.data) Object.assign(form1Data, f1.data)
     if (f2.data) Object.assign(form2Data, f2.data)
-  } catch (e) {} finally { resultLoading.value = false }
+  } catch (e) {} finally {
+    if (resultTask.value?.id === row.id) resultLoading.value = false
+  }
 }
 
 onMounted(async () => {

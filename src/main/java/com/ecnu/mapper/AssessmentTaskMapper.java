@@ -19,6 +19,8 @@ public interface AssessmentTaskMapper {
      */
     AssessmentTask getById(Long id);
 
+    AssessmentTask getByIdForUpdate(Long id);
+
     /**
      * 分页获取评估任务列表（支持按状态/儿童/医生筛选）
      */

@@ -37,6 +37,10 @@
           <el-icon><List /></el-icon>
           <span>评估任务管理</span>
         </el-menu-item>
+        <el-menu-item index="/admin/introduction">
+          <el-icon><Document /></el-icon>
+          <span>项目介绍管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 

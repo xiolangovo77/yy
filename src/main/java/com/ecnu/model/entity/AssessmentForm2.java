@@ -40,6 +40,16 @@ public class AssessmentForm2 {
     @Schema(description = "医生补充备注")
     private String doctorRemark;
 
+    @Schema(description = "报告有用程度（1-5分，程度递增）")
+    private Integer reportUsefulness;
+
+    @Schema(description = "报告证据有效性（1-5分，程度递增）")
+    private Integer evidenceValidity;
+
+    @Schema(description = "事实是否准确（1-5分，程度递增）")
+    private Integer factAccuracy;
+
+
     @Hidden
     @Schema(description = "软删除标记 0-未删除 1-已删除")
     private Integer isDeleted;

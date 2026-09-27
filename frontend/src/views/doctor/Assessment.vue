@@ -78,6 +78,19 @@
               <el-input v-model="form1.doctorRemark" type="textarea" :rows="2"
                 placeholder="选填" maxlength="500" show-word-limit />
             </el-form-item>
+            <el-divider content-position="left">社交行为观察</el-divider>
+            <p class="score-hint">以下四项均为1–5分，分数越高表示严重程度越高。</p>
+            <el-form-item v-for="field in stageOneScores" :key="field.key" :label="field.label" :prop="field.key">
+              <div class="score-field">
+                <p>{{ field.description }}</p>
+                <el-radio-group v-model="form1[field.key]">
+                  <el-radio-button v-for="score in 5" :key="score" :value="score">{{ score }}分</el-radio-button>
+                </el-radio-group>
+              </div>
+            </el-form-item>
+            <el-form-item label="重复刻板或感觉异常行为" prop="repetitiveBehavior" class="behavior-description">
+              <el-input v-model="form1.repetitiveBehavior" type="textarea" :rows="4" maxlength="2000" show-word-limit placeholder="出现何种重复动作、刻板摆弄物体、异常感觉兴趣等？未观察到时请填写“未观察到”。" />
+            </el-form-item>
             <el-form-item>
               <el-button type="success" :loading="form1Submitting" size="large" @click="submitForm1">
                 提交阶段一，进入阶段二
@@ -143,6 +156,13 @@
             <el-input v-model="form2.doctorRemark" type="textarea" :rows="2"
               placeholder="选填" maxlength="500" show-word-limit />
           </el-form-item>
+          <el-divider content-position="left">报告评价评分</el-divider>
+          <p class="score-hint">以下三项均为1–5分，分数越高表示相应程度越高。</p>
+          <el-form-item v-for="field in stageTwoScores" :key="field.key" :label="field.label" :prop="field.key" label-width="150px">
+            <el-radio-group v-model="form2[field.key]">
+              <el-radio-button v-for="score in 5" :key="score" :value="score">{{ score }}分</el-radio-button>
+            </el-radio-group>
+          </el-form-item>
           <el-form-item>
             <el-button type="success" :loading="form2Submitting" size="large" @click="submitForm2">
               提交最终评估，完成任务
@@ -153,13 +173,14 @@
     </template>
 
     <!-- 任务已完成 -->
-    <el-card v-if="taskInfo.taskStatus === 2" shadow="never">
-      <el-result icon="success" title="评估已完成" sub-title="该评估任务已提交完成">
+    <el-card v-if="taskInfo.taskStatus === 2" shadow="never" style="margin-bottom: 20px">
+      <el-result icon="success" title="评估已完成" :sub-title="taskInfo.feedbackSubmitted ? '评估与报告评价均已提交' : '请继续填写下方报告使用评价'">
         <template #extra>
           <el-button type="primary" @click="goBack">返回任务列表</el-button>
         </template>
       </el-result>
     </el-card>
+    <TaskFeedback v-if="taskInfo.taskStatus === 2" :task-id="route.params.taskId" @submitted="taskInfo.feedbackSubmitted = true" />
   </div>
 </template>
 
@@ -173,6 +194,8 @@ import { isMainVideoName } from '@/utils/video'
 import { getReportList } from '@/api/report'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ReportViewer from '@/components/ReportViewer.vue'
+import TaskFeedback from '@/components/TaskFeedback.vue'
+import { stageOneScores, stageTwoScores, emptyScores, scoreRules } from '@/utils/assessmentFields'
 
 const route = useRoute()
 const router = useRouter()
@@ -194,24 +217,32 @@ const form1Ref = ref(null)
 const form2Ref = ref(null)
 
 const taskInfo = reactive({
-  taskNo: '', childId: '', taskStatus: 0, currentStep: 1
+  taskNo: '', childId: '', taskStatus: 0, currentStep: 1, feedbackSubmitted: false
 })
 
 const form1 = reactive({
-  diseaseType: '', confidence: 0, diagnosticBasis: '', doctorRemark: ''
+  diseaseType: '', confidence: 0, diagnosticBasis: '', doctorRemark: '',
+  ...emptyScores(stageOneScores), repetitiveBehavior: ''
 })
 
 const form1Rules = {
+  ...scoreRules(stageOneScores),
+  repetitiveBehavior: [
+    { required: true, whitespace: true, message: '请描述相关行为，未观察到时请注明', trigger: 'blur' },
+    { max: 2000, message: '行为描述不能超过2000字', trigger: 'blur' }
+  ],
   diseaseType: [{ required: true, message: '请选择疾病判定', trigger: 'change' }],
   confidence: [{ required: true, message: '请设置诊断信心', trigger: 'change' }],
   diagnosticBasis: [{ required: true, message: '请输入诊断依据', trigger: 'blur' }]
 }
 
 const form2 = reactive({
-  diseaseType: '', confidence: 0, diagnosticBasis: '', finalConclusion: '', doctorRemark: ''
+  diseaseType: '', confidence: 0, diagnosticBasis: '', finalConclusion: '', doctorRemark: '',
+  ...emptyScores(stageTwoScores)
 })
 
 const form2Rules = {
+  ...scoreRules(stageTwoScores),
   diseaseType: [{ required: true, message: '请选择疾病判定', trigger: 'change' }],
   confidence: [{ required: true, message: '请设置诊断信心', trigger: 'change' }],
   diagnosticBasis: [{ required: true, message: '请输入诊断依据', trigger: 'blur' }],
@@ -274,6 +305,8 @@ async function loadStageOne(taskId) {
     form1.confidence = res.data.confidence ?? 0
     form1.diagnosticBasis = res.data.diagnosticBasis || ''
     form1.doctorRemark = res.data.doctorRemark || ''
+    for (const field of stageOneScores) form1[field.key] = res.data[field.key] ?? null
+    form1.repetitiveBehavior = res.data.repetitiveBehavior || ''
   }
 }
 
@@ -304,6 +337,7 @@ async function loadTask() {
       form2.diagnosticBasis = saved.diagnosticBasis || form1.diagnosticBasis
       form2.finalConclusion = saved.finalConclusion || ''
       form2.doctorRemark = saved.doctorRemark || ''
+      for (const field of stageTwoScores) form2[field.key] = saved[field.key] ?? null
     }
   } catch (e) {
     formLoadError.value = '评估表单加载失败，请重新加载后继续填写'
@@ -311,8 +345,9 @@ async function loadTask() {
 }
 
 async function submitForm1() {
+  if (form1Submitting.value || taskLoading.value || formLoadError.value) return
   const valid = await form1Ref.value.validate().catch(() => false)
-  if (!valid) return
+  if (!valid || form1Submitting.value) return
   form1Submitting.value = true
   try {
     await submitForm1Api({
@@ -320,6 +355,8 @@ async function submitForm1() {
       diseaseType: form1.diseaseType,
       confidence: form1.confidence,
       diagnosticBasis: form1.diagnosticBasis,
+      ...Object.fromEntries(stageOneScores.map(field => [field.key, form1[field.key]])),
+      repetitiveBehavior: form1.repetitiveBehavior,
       doctorRemark: form1.doctorRemark || undefined
     })
     ElMessage.success('阶段一提交成功，进入阶段二')
@@ -329,26 +366,29 @@ async function submitForm1() {
 }
 
 async function submitForm2() {
-  ElMessageBox.confirm(
-    '提交后任务将标记为已完成，此操作不可撤销。确定提交吗？',
-    '确认提交最终评估',
-    { confirmButtonText: '确定提交', cancelButtonText: '再检查一下', type: 'warning' }
-  ).then(async () => {
-    form2Submitting.value = true
-    try {
-      await submitForm2Api({
-        taskId: route.params.taskId,
-        diseaseType: form2.diseaseType,
-        confidence: form2.confidence,
-        diagnosticBasis: form2.diagnosticBasis,
-        finalConclusion: form2.finalConclusion,
-        doctorRemark: form2.doctorRemark || undefined
-      })
-      ElMessage.success('评估任务已完成！')
-      taskInfo.taskStatus = 2
-      await loadTask()
-    } catch (e) {} finally { form2Submitting.value = false }
-  }).catch(() => {})
+  if (form2Submitting.value || taskLoading.value || formLoadError.value) return
+  const valid = await form2Ref.value.validate().catch(() => false)
+  if (!valid || form2Submitting.value) return
+  form2Submitting.value = true
+  try {
+    await ElMessageBox.confirm(
+      '提交后评估任务将标记为已完成，并进入报告使用评价。确定提交吗？',
+      '确认提交最终评估',
+      { confirmButtonText: '确定提交', cancelButtonText: '再检查一下', type: 'warning' }
+    )
+    await submitForm2Api({
+      taskId: route.params.taskId,
+      diseaseType: form2.diseaseType,
+      confidence: form2.confidence,
+      diagnosticBasis: form2.diagnosticBasis,
+      ...Object.fromEntries(stageTwoScores.map(field => [field.key, form2[field.key]])),
+      finalConclusion: form2.finalConclusion,
+      doctorRemark: form2.doctorRemark || undefined
+    })
+    ElMessage.success('评估已完成，请继续填写报告使用评价')
+    taskInfo.taskStatus = 2
+    await loadTask()
+  } catch (e) {} finally { form2Submitting.value = false }
 }
 
 onMounted(() => loadTask())
@@ -362,4 +402,7 @@ onMounted(() => loadTask())
 .reference-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .main-video-player { background: #000; border-radius: 4px; overflow: hidden; }
 .main-video-player video { display: block; width: 100%; max-height: 400px; }
+.score-hint { color: #606266; font-size: 13px; margin: 0 0 20px; }
+.score-field p { color: #909399; font-size: 13px; margin: 0 0 8px; line-height: 1.6; }
+.behavior-description :deep(.el-form-item__label) { line-height: 1.6; height: auto; }
 </style>

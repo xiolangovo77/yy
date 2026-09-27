@@ -15,6 +15,8 @@ import com.ecnu.model.enums.RoleEnum;
 import com.ecnu.model.vo.AssessmentForm1VO;
 import com.ecnu.model.vo.AssessmentForm2VO;
 import com.ecnu.model.vo.AssessmentTaskVO;
+import com.ecnu.model.dto.AssessmentFeedbackSubmitDTO;
+import com.ecnu.model.vo.AssessmentFeedbackVO;
 import com.ecnu.service.AssessmentTaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,6 +32,21 @@ public class AssessmentTaskController {
 
     @Resource
     private AssessmentTaskService assessmentTaskService;
+
+    @GetMapping("/{taskId}/feedback")
+    @Operation(summary = "获取任务的报告评价，未评价时返回null")
+    @RequireRole({RoleEnum.DOCTOR, RoleEnum.ADMIN})
+    public BaseResponse<AssessmentFeedbackVO> getFeedback(@PathVariable Long taskId) {
+        return ResultUtils.success(assessmentTaskService.getFeedback(taskId));
+    }
+
+    @PostMapping("/feedback")
+    @Operation(summary = "医生完成评估后提交报告评价")
+    @RequireRole({RoleEnum.DOCTOR})
+    public BaseResponse<Boolean> submitFeedback(@RequestBody AssessmentFeedbackSubmitDTO dto) {
+        ThrowUtils.throwIf(dto == null, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(assessmentTaskService.submitFeedback(dto));
+    }
 
     /**
      * 分页获取评估任务列表

@@ -9,8 +9,14 @@ import com.ecnu.model.dto.AssessmentTaskPublishDTO;
 import com.ecnu.model.vo.AssessmentForm1VO;
 import com.ecnu.model.vo.AssessmentForm2VO;
 import com.ecnu.model.vo.AssessmentTaskVO;
+import com.ecnu.model.dto.AssessmentFeedbackSubmitDTO;
+import com.ecnu.model.vo.AssessmentFeedbackVO;
 
 public interface AssessmentTaskService {
+
+    AssessmentFeedbackVO getFeedback(Long taskId);
+
+    boolean submitFeedback(AssessmentFeedbackSubmitDTO dto);
 
     /**
      * 发布评估任务（同时创建 task + form1 + form2）

@@ -56,6 +56,14 @@ export function submitForm2(data) {
   return request.post('/task/sub_form2', data)
 }
 
+export function getTaskFeedback(taskId) {
+  return request.get(`/task/${taskId}/feedback`)
+}
+
+export function submitTaskFeedback(data) {
+  return request.post('/task/feedback', data)
+}
+
 /**
  * 删除任务（管理员）
  */
