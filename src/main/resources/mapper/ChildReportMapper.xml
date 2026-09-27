@@ -47,6 +47,10 @@
         <if test="childId != null">
             AND child_id = #{childId}
         </if>
+        <if test="doctorId != null">
+            AND EXISTS (SELECT 1 FROM child_info c
+                        WHERE c.id = child_report.child_id AND c.doctor_id = #{doctorId} AND c.is_deleted = 0)
+        </if>
         ORDER BY ${sortField} ${sortOrder}
     </select>
 

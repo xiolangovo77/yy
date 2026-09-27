@@ -24,6 +24,21 @@ public class ChildInfoVO {
     @Schema(description = "儿童姓名")
     private String childName;
 
+    @Schema(description = "负责医生ID")
+    private Long doctorId;
+
+    @Schema(description = "负责医生姓名")
+    private String doctorName;
+
+    @Schema(description = "是否存在未删除的评估任务")
+    private Boolean taskPublished;
+
+    @Schema(description = "是否允许转接医生（唯一任务未开始且未删除）")
+    private Boolean canTransferDoctor;
+
+    @Schema(description = "是否允许编辑负责医生（未发布任务或允许转接）")
+    private Boolean canChangeDoctor;
+
     @Schema(description = "年龄（岁）")
     private Integer age;
 

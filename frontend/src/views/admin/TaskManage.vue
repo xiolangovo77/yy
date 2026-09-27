@@ -71,14 +71,19 @@
             <el-option
               v-for="child in childOptions"
               :key="child.id"
-              :label="`${child.childName} (${child.childNo})`"
+              :label="`${child.childName} (${child.childNo}) · ${child.doctorName || '待绑定医生'}${child.taskPublished ? ' · 已发布任务' : ''}`"
+              :disabled="!child.doctorId || child.taskPublished !== false"
               :value="child.id"
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="负责医生">
+          <span>{{ selectedChild?.doctorName || '请先选择已绑定医生的儿童' }}</span>
+        </el-form-item>
         <el-form-item label="任务编号" prop="taskNo">
           <el-input v-model="publishForm.taskNo" placeholder="请输入任务编号" />
         </el-form-item>
+        <el-alert title="每个儿童只能有一个未删除的评估任务，删除原任务后可以重新发布。" type="info" :closable="false" show-icon />
       </el-form>
       <template #footer>
         <el-button @click="publishVisible = false">取消</el-button>
@@ -107,10 +112,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { getTaskList, publishTask, deleteTask, getForm1ByTaskId, getForm2ByTaskId } from '@/api/task'
-import { getChildList } from '@/api/child'
-import { getDoctorList } from '@/api/doctor'
+import { getAllChildOptions } from '@/api/child'
+import { getAllDoctorOptions } from '@/api/doctor'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const loading = ref(false)
@@ -131,6 +136,7 @@ const form1Data = reactive({ diseaseType: '', confidence: null, diagnosticBasis:
 const form2Data = reactive({ diseaseType: '', confidence: null, diagnosticBasis: '', finalConclusion: '' })
 
 const publishForm = reactive({ childId: null, taskNo: '' })
+const selectedChild = computed(() => childOptions.value.find(child => child.id === publishForm.childId))
 const publishRules = {
   childId: [{ required: true, message: '请选择儿童', trigger: 'change' }],
   taskNo: [
@@ -155,15 +161,15 @@ function statusText(status) {
 async function loadNameMaps() {
   try {
     const [childRes, doctorRes] = await Promise.all([
-      getChildList({ current: 1, pageSize: 20 }),
-      getDoctorList({ current: 1, pageSize: 20 })
+      getAllChildOptions(),
+      getAllDoctorOptions()
     ])
     const cm = {}
-    ;(childRes.data.records || []).forEach(c => { cm[c.id] = c.childName })
+    ;childRes.forEach(c => { cm[c.id] = c.childName })
     childNameMap.value = cm
 
     const dm = {}
-    ;(doctorRes.data.records || []).forEach(d => { dm[d.id] = d.doctorName })
+    ;doctorRes.forEach(d => { dm[d.id] = d.doctorName })
     doctorNameMap.value = dm
   } catch (e) {}
 }
@@ -193,21 +199,22 @@ async function fetchData() {
 function resetSearch() { search.taskStatus = undefined; search.childName = ''; fetchData() }
 
 async function handlePublish() {
-  // 儿童列表已在 loadNameMaps 中加载
-  if (childOptions.value.length === 0) {
-    try {
-      const res = await getChildList({ current: 1, pageSize: 20 })
-      childOptions.value = res.data?.records || []
-    } catch (e) { childOptions.value = [] }
-  }
+  try {
+    childOptions.value = await getAllChildOptions()
+  } catch (e) { childOptions.value = [] }
   publishForm.childId = null
   publishForm.taskNo = ''
   publishVisible.value = true
 }
 
 async function doPublish() {
+  if (publishing.value) return
   const valid = await publishFormRef.value.validate().catch(() => false)
-  if (!valid) return
+  if (!valid || publishing.value) return
+  if (!selectedChild.value?.doctorId || selectedChild.value.taskPublished !== false) {
+    ElMessage.warning('请选择已绑定医生且当前没有评估任务的儿童')
+    return
+  }
   publishing.value = true
   try {
     await publishTask({ childId: publishForm.childId, taskNo: publishForm.taskNo })
@@ -218,7 +225,7 @@ async function doPublish() {
 }
 
 function handleDelete(row) {
-  ElMessageBox.confirm('确定要删除该评估任务吗？关联的表单也将被删除。', '警告', {
+  ElMessageBox.confirm('确定要删除该评估任务吗？关联的表单也将被删除，删除后可以为该儿童重新发布任务。', '警告', {
     confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'error'
   }).then(async () => {
     try {
@@ -246,10 +253,6 @@ async function handleViewResult(row) {
 
 onMounted(async () => {
   await loadNameMaps()
-  try {
-    const res = await getChildList({ current: 1, pageSize: 20 })
-    childOptions.value = res.data?.records || []
-  } catch (e) {}
   fetchData()
 })
 </script>

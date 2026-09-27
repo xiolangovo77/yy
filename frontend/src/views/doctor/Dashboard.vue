@@ -2,6 +2,7 @@
   <div class="page-container">
     <div class="page-header">
       <h1 class="page-title">我的任务</h1>
+      <p>仅显示分配给您的评估任务，儿童的负责医生由管理员维护。</p>
     </div>
 
     <div class="search-bar">
@@ -49,7 +50,7 @@
             </el-button>
             <!-- 进行中：继续评估 -->
             <el-button
-              v-if="row.taskStatus === 1 && row.doctorId === userStore.userInfo.id"
+              v-if="row.taskStatus === 1"
               type="warning"
               size="small"
               @click="handleAssess(row)"
@@ -57,12 +58,8 @@
               继续评估
             </el-button>
             <!-- 已完成：查看 -->
-            <el-tag v-if="row.taskStatus === 2 && row.doctorId === userStore.userInfo.id" type="success" size="small">
+            <el-tag v-if="row.taskStatus === 2" type="success" size="small">
               已完成
-            </el-tag>
-            <!-- 被其他医生认领 -->
-            <el-tag v-if="row.taskStatus === 1 && row.doctorId !== userStore.userInfo.id" type="info" size="small">
-              已被认领
             </el-tag>
           </template>
         </el-table-column>
@@ -89,13 +86,11 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
 import { getTaskList, startTask } from '@/api/task'
-import { getChildList } from '@/api/child'
+import { getAllChildOptions } from '@/api/child'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
-const userStore = useUserStore()
 const childNameMap = ref({})
 
 const loading = ref(false)
@@ -151,9 +146,9 @@ function handleAssess(row) {
 
 async function loadChildNames() {
   try {
-    const res = await getChildList({ current: 1, pageSize: 20 })
+    const children = await getAllChildOptions()
     const cm = {}
-    ;(res.data.records || []).forEach(c => { cm[c.id] = c.childName })
+    ;children.forEach(c => { cm[c.id] = c.childName })
     childNameMap.value = cm
   } catch (e) {}
 }

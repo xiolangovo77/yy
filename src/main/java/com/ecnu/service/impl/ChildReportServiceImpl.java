@@ -21,6 +21,8 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import com.ecnu.service.ChildDoctorBinding;
+import com.ecnu.service.ChildInfoService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +32,11 @@ public class ChildReportServiceImpl implements ChildReportService {
 
     @Resource
     private ChildReportMapper childReportMapper;
+
+    @Resource
+    private ChildDoctorBinding childDoctorBinding;
+    @Resource
+    private ChildInfoService childInfoService;
 
     /**
      * 添加报告
@@ -104,6 +111,7 @@ public class ChildReportServiceImpl implements ChildReportService {
                 ErrorCode.PARAMS_ERROR, "排序仅支持ascend/descend");
         pageRequest.setSortOrder(sortOrder.equalsIgnoreCase("ascend") ? "ASC" : "DESC");
 
+        pageRequest.setDoctorId(childDoctorBinding.currentDoctorScope());
         PageHelper.startPage(current, pageSize);
         List<ChildReport> list = childReportMapper.list(pageRequest);
         ThrowUtils.throwIf(list == null, ErrorCode.OPERATION_ERROR);
@@ -123,6 +131,7 @@ public class ChildReportServiceImpl implements ChildReportService {
         ThrowUtils.throwIf(id == null, ErrorCode.PARAMS_ERROR, "id不能为空");
         ChildReport childReport = childReportMapper.getById(id);
         ThrowUtils.throwIf(childReport == null, ErrorCode.NOT_FOUND_ERROR, "报告不存在");
+        childInfoService.getById(childReport.getChildId());
         ChildReportVO childReportVO = new ChildReportVO();
         BeanUtil.copyProperties(childReport, childReportVO);
         return childReportVO;

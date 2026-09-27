@@ -19,6 +19,9 @@ public class ChildInfoAddDTO {
     @Schema(description = "儿童姓名")
     private String childName;
 
+    @Schema(description = "负责医生ID")
+    private Long doctorId;
+
     @Schema(description = "年龄（岁）")
     private Integer age;
 

@@ -84,4 +84,7 @@
         WHERE account = #{account} AND password = #{password} AND is_deleted = 0
     </select>
 
+    <select id="getByIdForUpdate" resultType="com.ecnu.model.entity.Doctor">
+        SELECT * FROM sys_doctor WHERE id = #{id} AND is_deleted = 0 FOR UPDATE
+    </select>
 </mapper>

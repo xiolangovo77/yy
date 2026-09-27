@@ -1,5 +1,7 @@
 package com.ecnu.service;
 
+import com.ecnu.model.dto.ChildDoctorTransferDTO;
+
 import com.ecnu.common.DeleteRequest;
 import com.ecnu.common.PageResponse;
 import com.ecnu.model.dto.ChildInfoAddDTO;
@@ -8,6 +10,8 @@ import com.ecnu.model.dto.ChildInfoUpdateDTO;
 import com.ecnu.model.vo.ChildInfoVO;
 
 public interface ChildInfoService {
+
+    boolean transferDoctor(ChildDoctorTransferDTO request);
 
     /**
      * 添加儿童信息

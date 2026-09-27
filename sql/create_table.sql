@@ -1,10 +1,29 @@
 -- =============================================
--- 医生评估平台 数据库建表语句
+-- 医生评估平台：清空并重新初始化数据库
+-- 自动创建并切换到 yy 数据库，无需额外建库或迁移脚本。
+-- 执行后会删除并重建以下 7 张业务表，清空全部现有业务数据。
+-- 初始管理员：账号 admin，密码 123456，角色 1，状态 1。
+-- 已合并：儿童绑定医生、每个儿童仅一个未删除任务（删除后可重发）。
 -- 引擎：InnoDB  字符集：utf8mb4
 -- =============================================
 
--- 1. 医生用户表
+SET NAMES utf8mb4;
+
+CREATE DATABASE IF NOT EXISTS `yy`
+    DEFAULT CHARACTER SET utf8mb4
+    DEFAULT COLLATE utf8mb4_unicode_ci;
+USE `yy`;
+
+-- 按依赖顺序先删除表单和业务记录，最后删除儿童、医生。
+DROP TABLE IF EXISTS `assessment_form2`;
+DROP TABLE IF EXISTS `assessment_form1`;
+DROP TABLE IF EXISTS `assessment_task`;
+DROP TABLE IF EXISTS `child_report`;
+DROP TABLE IF EXISTS `video_resource`;
+DROP TABLE IF EXISTS `child_info`;
 DROP TABLE IF EXISTS `sys_doctor`;
+
+-- 1. 医生用户表
 CREATE TABLE `sys_doctor` (
                               `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                               `doctor_name` varchar(64) NOT NULL COMMENT '医生姓名',
@@ -23,9 +42,9 @@ CREATE TABLE `sys_doctor` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='医生用户表';
 
 -- 2. 儿童基本信息表
-DROP TABLE IF EXISTS `child_info`;
 CREATE TABLE `child_info` (
                               `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+                              `doctor_id` bigint unsigned NOT NULL COMMENT '负责医生ID',
                               `child_no` varchar(32) NOT NULL COMMENT '儿童编号（唯一）',
                               `child_name` varchar(64) DEFAULT NULL COMMENT '儿童姓名',
                               `age` int unsigned DEFAULT NULL COMMENT '年龄（岁）',
@@ -36,11 +55,11 @@ CREATE TABLE `child_info` (
                               `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                               `is_deleted` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '软删除标记 0-未删除 1-已删除',
                               PRIMARY KEY (`id`),
+                              KEY `idx_child_doctor_id` (`doctor_id`),
                               UNIQUE KEY `uk_child_no` (`child_no`) COMMENT '儿童编号唯一索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='儿童基本信息表';
 
 -- 3. 视频资源表
-DROP TABLE IF EXISTS `video_resource`;
 CREATE TABLE `video_resource` (
                                   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                                   `child_id` bigint unsigned NOT NULL COMMENT '关联儿童ID',
@@ -55,7 +74,6 @@ CREATE TABLE `video_resource` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='视频资源表';
 
 -- 4. 评估任务表（儿童列表核心表）
-DROP TABLE IF EXISTS `assessment_task`;
 CREATE TABLE `assessment_task` (
                                    `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                                    `doctor_id` bigint unsigned NOT NULL COMMENT '负责医生ID',
@@ -66,13 +84,14 @@ CREATE TABLE `assessment_task` (
                                    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                                    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                                    `is_deleted` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '软删除标记 0-未删除 1-已删除',
+                                   `active_child_id` bigint unsigned GENERATED ALWAYS AS (CASE WHEN `is_deleted` = 0 THEN `child_id` ELSE NULL END) STORED,
                                    PRIMARY KEY (`id`),
                                    UNIQUE KEY `uk_task_no` (`task_no`) COMMENT '任务编号唯一索引',
+                                   UNIQUE KEY `uk_assessment_child_id` (`active_child_id`) COMMENT '每个儿童只能有一个未删除的评估任务',
                                    KEY `idx_doctor_status` (`doctor_id`, `task_status`) COMMENT '医生+状态索引，用于列表查询'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评估任务表';
 
 -- 5. 第一阶段评估表单表
-DROP TABLE IF EXISTS `assessment_form1`;
 CREATE TABLE `assessment_form1` (
                                     `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                                     `task_id` bigint unsigned NOT NULL COMMENT '关联评估任务ID',
@@ -90,7 +109,6 @@ CREATE TABLE `assessment_form1` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='第一阶段评估表单表';
 
 -- 6. 儿童筛查报告表
-DROP TABLE IF EXISTS `child_report`;
 CREATE TABLE `child_report` (
                                 `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                                 `child_id` bigint unsigned NOT NULL COMMENT '关联儿童ID',
@@ -106,7 +124,6 @@ CREATE TABLE `child_report` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='儿童筛查报告表';
 
 -- 7. 第二阶段评估表单表
-DROP TABLE IF EXISTS `assessment_form2`;
 CREATE TABLE `assessment_form2` (
                                     `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                                     `task_id` bigint unsigned NOT NULL COMMENT '关联评估任务ID',
@@ -123,3 +140,11 @@ CREATE TABLE `assessment_form2` (
                                     UNIQUE KEY `uk_task_id` (`task_id`) COMMENT '任务ID唯一，一个任务对应一份二阶段表单',
                                     KEY `idx_child_id` (`child_id`) COMMENT '儿童ID索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='第二阶段评估表单表';
+
+
+-- 8. 初始化管理员（与后端 DefaultValue.SALT + 密码的 MD5 规则保持一致）
+-- 只创建管理员，不插入儿童、普通医生、任务或评估示例数据。
+INSERT INTO `sys_doctor`
+    (`id`, `doctor_name`, `hospital`, `account`, `password`, `role`, `status`, `is_deleted`)
+VALUES
+    (1, '系统管理员', '系统管理', 'admin', MD5(CONCAT('lxh', '123456')), 1, 1, 0);

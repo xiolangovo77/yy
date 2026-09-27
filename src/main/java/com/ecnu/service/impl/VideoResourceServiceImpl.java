@@ -21,6 +21,8 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import com.ecnu.service.ChildDoctorBinding;
+import com.ecnu.service.ChildInfoService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +32,11 @@ public class VideoResourceServiceImpl implements VideoResourceService {
 
     @Resource
     private VideoResourceMapper videoResourceMapper;
+
+    @Resource
+    private ChildDoctorBinding childDoctorBinding;
+    @Resource
+    private ChildInfoService childInfoService;
 
     /**
      * 添加视频资源
@@ -98,6 +105,7 @@ public class VideoResourceServiceImpl implements VideoResourceService {
         // 数据库查询
         VideoResource videoResource = videoResourceMapper.getById(id);
         ThrowUtils.throwIf(videoResource == null, ErrorCode.NOT_FOUND_ERROR, "视频资源不存在");
+        childInfoService.getById(videoResource.getChildId());
         VideoResourceVO videoResourceVO = new VideoResourceVO();
         BeanUtil.copyProperties(videoResource, videoResourceVO);
         return videoResourceVO;
@@ -127,6 +135,7 @@ public class VideoResourceServiceImpl implements VideoResourceService {
                 ErrorCode.PARAMS_ERROR, "排序仅支持ascend/descend");
         pageRequest.setSortOrder(sortOrder.equalsIgnoreCase("ascend") ? "ASC" : "DESC");
 
+        pageRequest.setDoctorId(childDoctorBinding.currentDoctorScope());
         PageHelper.startPage(current, pageSize);
         List<VideoResource> list = videoResourceMapper.list(pageRequest);
         ThrowUtils.throwIf(list == null, ErrorCode.OPERATION_ERROR);

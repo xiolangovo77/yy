@@ -8,6 +8,7 @@ import com.ecnu.common.ResultUtils;
 import com.ecnu.exception.ErrorCode;
 import com.ecnu.exception.ThrowUtils;
 import com.ecnu.model.dto.ChildInfoAddDTO;
+import com.ecnu.model.dto.ChildDoctorTransferDTO;
 import com.ecnu.model.dto.ChildInfoPageRequestDTO;
 import com.ecnu.model.dto.ChildInfoUpdateDTO;
 import com.ecnu.model.enums.RoleEnum;
@@ -27,6 +28,14 @@ public class ChildInfoController {
 
     @Resource
     private ChildInfoService childInfoService;
+
+    @PutMapping("/transfer")
+    @Operation(summary = "转接儿童负责医生")
+    @RequireRole({RoleEnum.ADMIN})
+    public BaseResponse<Boolean> transferDoctor(@RequestBody ChildDoctorTransferDTO request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(childInfoService.transferDoctor(request));
+    }
 
     /**
      * 添加儿童信息

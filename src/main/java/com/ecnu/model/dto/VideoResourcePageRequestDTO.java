@@ -12,4 +12,7 @@ public class VideoResourcePageRequestDTO extends PageRequest {
      * 关联儿童ID（可选）
      */
     private Long childId;
+
+    /** 服务端设置的医生访问范围 */
+    private Long doctorId;
 }

@@ -22,4 +22,7 @@ public class ChildInfoPageRequestDTO extends PageRequest {
      * 评估方式（精确匹配）
      */
     private String assessType;
+
+    /** 负责医生筛选 */
+    private Long doctorId;
 }

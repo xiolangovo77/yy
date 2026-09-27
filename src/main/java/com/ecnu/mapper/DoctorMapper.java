@@ -42,6 +42,8 @@ public interface DoctorMapper {
      */
     Doctor getById(Long id);
 
+    Doctor getByIdForUpdate(Long id);
+
     /**
      * 修改医生信息
      * @param doctor

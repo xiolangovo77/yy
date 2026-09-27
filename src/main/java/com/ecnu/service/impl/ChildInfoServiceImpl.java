@@ -10,7 +10,15 @@ import com.ecnu.exception.BusinessException;
 import com.ecnu.exception.ErrorCode;
 import com.ecnu.exception.ThrowUtils;
 import com.ecnu.mapper.ChildInfoMapper;
+import com.ecnu.mapper.DoctorMapper;
+import com.ecnu.mapper.AssessmentTaskMapper;
+import com.ecnu.model.entity.Doctor;
+import com.ecnu.model.entity.AssessmentTask;
+import com.ecnu.service.ChildDoctorBinding;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.Objects;
 import com.ecnu.model.dto.ChildInfoAddDTO;
+import com.ecnu.model.dto.ChildDoctorTransferDTO;
 import com.ecnu.model.dto.ChildInfoPageRequestDTO;
 import com.ecnu.model.dto.ChildInfoUpdateDTO;
 import com.ecnu.model.entity.ChildInfo;
@@ -30,12 +38,38 @@ public class ChildInfoServiceImpl implements ChildInfoService {
     @Resource
     private ChildInfoMapper childInfoMapper;
 
+    @Resource
+    private ChildDoctorBinding childDoctorBinding;
+    @Resource
+    private DoctorMapper doctorMapper;
+    @Resource
+    private AssessmentTaskMapper assessmentTaskMapper;
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean transferDoctor(ChildDoctorTransferDTO request) {
+        ThrowUtils.throwIf(request.getId() == null, ErrorCode.PARAMS_ERROR, "儿童ID不能为空");
+        ChildInfo existing = childInfoMapper.getByIdForUpdate(request.getId());
+        ThrowUtils.throwIf(existing == null, ErrorCode.NOT_FOUND_ERROR, "儿童信息不存在");
+        childDoctorBinding.requireAssignableDoctor(request.getDoctorId());
+        ThrowUtils.throwIf(Objects.equals(existing.getDoctorId(), request.getDoctorId()),
+                ErrorCode.PARAMS_ERROR, "请选择其他医生进行转接");
+        requireDoctorChangeAllowed(existing.getId(), true);
+        ChildInfo change = new ChildInfo();
+        change.setId(existing.getId());
+        change.setDoctorId(request.getDoctorId());
+        ThrowUtils.throwIf(!childInfoMapper.update(change), ErrorCode.OPERATION_ERROR, "转接医生失败");
+        assessmentTaskMapper.reassignPendingByChildId(existing.getId(), request.getDoctorId());
+        return true;
+    }
+
     /**
      * 添加儿童信息
      * @param childInfoAddDTO
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean add(ChildInfoAddDTO childInfoAddDTO) {
         // 参数校验
         // childNo（必填）
@@ -69,6 +103,7 @@ public class ChildInfoServiceImpl implements ChildInfoService {
             childInfoAddDTO.setAssessType(assessType);
         }
 
+        childDoctorBinding.requireAssignableDoctor(childInfoAddDTO.getDoctorId());
         ChildInfo childInfo = new ChildInfo();
         BeanUtil.copyProperties(childInfoAddDTO, childInfo);
 
@@ -109,9 +144,8 @@ public class ChildInfoServiceImpl implements ChildInfoService {
         // 数据库查询
         ChildInfo childInfo = childInfoMapper.getById(id);
         ThrowUtils.throwIf(childInfo == null, ErrorCode.NOT_FOUND_ERROR, "儿童信息不存在");
-        ChildInfoVO childInfoVO = new ChildInfoVO();
-        BeanUtil.copyProperties(childInfo, childInfoVO);
-        return childInfoVO;
+        childDoctorBinding.checkReadAccess(childInfo.getDoctorId());
+        return toVO(childInfo);
     }
 
     /**
@@ -120,6 +154,7 @@ public class ChildInfoServiceImpl implements ChildInfoService {
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean update(ChildInfoUpdateDTO childInfoUpdateDTO) {
         // 校验参数
         Long id = childInfoUpdateDTO.getId();
@@ -155,12 +190,22 @@ public class ChildInfoServiceImpl implements ChildInfoService {
             childInfoUpdateDTO.setAssessType(assessType);
         }
 
+        ChildInfo existing = childInfoMapper.getByIdForUpdate(id);
+        ThrowUtils.throwIf(existing == null, ErrorCode.NOT_FOUND_ERROR, "儿童信息不存在");
+        childDoctorBinding.requireAssignableDoctor(childInfoUpdateDTO.getDoctorId());
+        boolean doctorChanged = !Objects.equals(existing.getDoctorId(), childInfoUpdateDTO.getDoctorId());
+        if (doctorChanged) {
+            requireDoctorChangeAllowed(id, false);
+        }
         ChildInfo childInfo = new ChildInfo();
         BeanUtil.copyProperties(childInfoUpdateDTO, childInfo);
 
         // 数据库操作
         boolean result = childInfoMapper.update(childInfo);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        if (doctorChanged) {
+            assessmentTaskMapper.reassignPendingByChildId(id, childInfo.getDoctorId());
+        }
         return result;
     }
 
@@ -195,6 +240,12 @@ public class ChildInfoServiceImpl implements ChildInfoService {
                 ErrorCode.PARAMS_ERROR, "排序仅支持ascend/descend");
         pageRequest.setSortOrder(sortOrder.equalsIgnoreCase("ascend") ? "ASC" : "DESC");
 
+        Long doctorScope = childDoctorBinding.currentDoctorScope();
+        if (doctorScope != null) {
+            pageRequest.setDoctorId(doctorScope);
+        }
+        ThrowUtils.throwIf(!List.of("id", "child_no", "child_name", "age", "create_time", "update_time").contains(sortField),
+                ErrorCode.PARAMS_ERROR, "不支持的排序字段");
         // 数据库操作
         PageHelper.startPage(current, pageSize);
         List<ChildInfo> list = childInfoMapper.list(pageRequest);
@@ -203,8 +254,35 @@ public class ChildInfoServiceImpl implements ChildInfoService {
         // 封装结果：先用原始查询结果获取分页信息，再转换为 VO
         PageInfo<ChildInfo> pageInfo = new PageInfo<>(list);
         List<ChildInfoVO> voList = list.stream()
-                .map(childInfo -> BeanUtil.toBean(childInfo, ChildInfoVO.class))
+                .map(this::toVO)
                 .collect(Collectors.toList());
         return new PageResponse(pageInfo.getTotal(), voList);
     }
+    private ChildInfoVO toVO(ChildInfo childInfo) {
+        ChildInfoVO vo = BeanUtil.toBean(childInfo, ChildInfoVO.class);
+        List<AssessmentTask> tasks = assessmentTaskMapper.listByChildId(childInfo.getId());
+        boolean canTransfer = hasSinglePendingTask(tasks);
+        vo.setTaskPublished(!tasks.isEmpty());
+        vo.setCanTransferDoctor(canTransfer);
+        vo.setCanChangeDoctor(tasks.isEmpty() || canTransfer);
+        if (childInfo.getDoctorId() != null) {
+            Doctor doctor = doctorMapper.getById(childInfo.getDoctorId());
+            if (doctor != null) vo.setDoctorName(doctor.getDoctorName());
+        }
+        return vo;
+    }
+
+    private void requireDoctorChangeAllowed(Long childId, boolean requireTask) {
+        List<AssessmentTask> tasks = assessmentTaskMapper.listByChildId(childId);
+        if (!requireTask && tasks.isEmpty()) return;
+        ThrowUtils.throwIf(!hasSinglePendingTask(tasks), ErrorCode.OPERATION_ERROR,
+                "仅评估任务未开始且未删除时允许转接医生，进行中或已完成的任务不能转接");
+    }
+
+    private boolean hasSinglePendingTask(List<AssessmentTask> tasks) {
+        return tasks.size() == 1
+                && Integer.valueOf(0).equals(tasks.getFirst().getTaskStatus())
+                && Integer.valueOf(0).equals(tasks.getFirst().getIsDeleted());
+    }
+
 }

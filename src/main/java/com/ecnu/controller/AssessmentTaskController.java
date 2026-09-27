@@ -97,7 +97,7 @@ public class AssessmentTaskController {
     }
 
     /**
-     * 开始任务：分配医生 + 更新状态为进行中
+     * 开始任务：校验负责医生并更新状态为进行中
      */
     @PutMapping("/{id}/start")
     @Operation(summary = "开始任务")

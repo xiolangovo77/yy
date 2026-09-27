@@ -12,6 +12,7 @@ import com.ecnu.exception.BusinessException;
 import com.ecnu.exception.ErrorCode;
 import com.ecnu.exception.ThrowUtils;
 import com.ecnu.mapper.DoctorMapper;
+import com.ecnu.mapper.ChildInfoMapper;
 import com.ecnu.model.dto.DoctorAddDTO;
 import com.ecnu.model.dto.DoctorLoginDTO;
 import com.ecnu.model.dto.DoctorPageRequestDTO;
@@ -32,6 +33,7 @@ import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
 import java.util.HashMap;
@@ -45,6 +47,9 @@ public class DoctorServiceImpl implements DoctorService {
 
     @Resource
     private DoctorMapper doctorMapper;
+
+    @Resource
+    private ChildInfoMapper childInfoMapper;
 
     @Resource
     private JwtProperties jwtProperties;
@@ -123,17 +128,19 @@ public class DoctorServiceImpl implements DoctorService {
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean delete(DeleteRequest deleteRequest) {
         // 参数校验
         Long id = deleteRequest.getId();
         ThrowUtils.throwIf(id == null, ErrorCode.PARAMS_ERROR, "id不能为空");
         // 管理员账号不可删除
-        Doctor existingDoctor = doctorMapper.getById(id);
+        Doctor existingDoctor = doctorMapper.getByIdForUpdate(id);
         ThrowUtils.throwIf(existingDoctor == null, ErrorCode.NOT_FOUND_ERROR, "医生不存在");
         if (RoleEnum.ADMIN.getCode().equals(existingDoctor.getRole())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "管理员账号不可删除");
         }
         // 数据库操作
+        requireNoBoundChildren(id);
         boolean result = doctorMapper.deleteById(id);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return result;
@@ -145,20 +152,22 @@ public class DoctorServiceImpl implements DoctorService {
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateStatus(DoctorStatusDTO doctorStatusDTO) {
         // 参数验证
         Long id = doctorStatusDTO.getId();
         ThrowUtils.throwIf(id == null, ErrorCode.PARAMS_ERROR, "id不能为空");
         Integer status = doctorStatusDTO.getStatus();
-        ThrowUtils.throwIf(status != StatusConstant.ENABLED && status != StatusConstant.DISABLED,
+        ThrowUtils.throwIf(status == null || (status != StatusConstant.ENABLED && status != StatusConstant.DISABLED),
                 ErrorCode.PARAMS_ERROR, "传入状态错误");
         // 管理员账号不可修改状态
-        Doctor existingDoctor = doctorMapper.getById(id);
+        Doctor existingDoctor = doctorMapper.getByIdForUpdate(id);
         ThrowUtils.throwIf(existingDoctor == null, ErrorCode.NOT_FOUND_ERROR, "医生不存在");
         if (RoleEnum.ADMIN.getCode().equals(existingDoctor.getRole())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "管理员账号不可禁用");
         }
         // 数据库操作
+        if (Integer.valueOf(StatusConstant.DISABLED).equals(status)) requireNoBoundChildren(id);
         boolean result = doctorMapper.updateByStatus(doctorStatusDTO);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return result;
@@ -187,6 +196,7 @@ public class DoctorServiceImpl implements DoctorService {
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean update(DoctorUpdateDTO doctorUpdateDTO) {
         // 校验参数
         // account
@@ -223,7 +233,7 @@ public class DoctorServiceImpl implements DoctorService {
         }
 
         // 管理员账号不可修改
-        Doctor existingDoctor = doctorMapper.getById(doctorUpdateDTO.getId());
+        Doctor existingDoctor = doctorMapper.getByIdForUpdate(doctorUpdateDTO.getId());
         ThrowUtils.throwIf(existingDoctor == null, ErrorCode.NOT_FOUND_ERROR, "医生不存在");
         if (RoleEnum.ADMIN.getCode().equals(existingDoctor.getRole())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "管理员账号不可修改");
@@ -240,6 +250,7 @@ public class DoctorServiceImpl implements DoctorService {
         }
 
         // 数据库操作
+        if (!RoleEnum.DOCTOR.getCode().equals(role)) requireNoBoundChildren(doctor.getId());
         boolean result = doctorMapper.update(doctor);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return result;
@@ -469,4 +480,9 @@ public class DoctorServiceImpl implements DoctorService {
         stringRedisTemplate.delete(redisKey);
         return true;
     }
+    private void requireNoBoundChildren(Long doctorId) {
+        ThrowUtils.throwIf(childInfoMapper.countByDoctorId(doctorId) > 0,
+                ErrorCode.OPERATION_ERROR, "该医生仍绑定儿童，请先更换儿童的负责医生");
+    }
+
 }

@@ -69,3 +69,14 @@ export function deleteDoctor(data) {
 export function updateProfile(data) {
   return request.put('/doctor/profile', data)
 }
+
+/** 加载全部选择项，遵守后端每页最多 20 条的限制。 */
+export async function getAllDoctorOptions(filters = {}) {
+  const records = []
+  for (let current = 1; ; current++) {
+    const res = await getDoctorList({ ...filters, current, pageSize: 20, sortField: 'id', sortOrder: 'ascend' })
+    const page = res.data.records || []
+    records.push(...page)
+    if (!page.length || records.length >= Number(res.data.total || 0)) return records
+  }
+}

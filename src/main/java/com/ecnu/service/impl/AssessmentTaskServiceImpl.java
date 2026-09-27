@@ -13,6 +13,9 @@ import com.ecnu.exception.ThrowUtils;
 import com.ecnu.mapper.AssessmentForm1Mapper;
 import com.ecnu.mapper.AssessmentForm2Mapper;
 import com.ecnu.mapper.AssessmentTaskMapper;
+import com.ecnu.mapper.ChildInfoMapper;
+import com.ecnu.model.entity.ChildInfo;
+import com.ecnu.service.ChildDoctorBinding;
 import com.ecnu.model.dto.AssessmentForm1SubmitDTO;
 import com.ecnu.model.dto.AssessmentForm2SubmitDTO;
 import com.ecnu.model.dto.AssessmentTaskPageRequestDTO;
@@ -41,6 +44,11 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
     private AssessmentTaskMapper assessmentTaskMapper;
 
     @Resource
+    private ChildInfoMapper childInfoMapper;
+    @Resource
+    private ChildDoctorBinding childDoctorBinding;
+
+    @Resource
     private AssessmentForm1Mapper assessmentForm1Mapper;
 
     @Resource
@@ -61,13 +69,19 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "任务编号不能超过32位");
         }
 
+        ChildInfo child = childInfoMapper.getByIdForUpdate(childId);
+        ThrowUtils.throwIf(child == null, ErrorCode.NOT_FOUND_ERROR, "儿童信息不存在");
+        ThrowUtils.throwIf(!assessmentTaskMapper.listByChildId(childId).isEmpty(),
+                ErrorCode.OPERATION_ERROR, "该儿童已有评估任务，请删除原任务后再发布");
+        childDoctorBinding.requireAssignableDoctor(child.getDoctorId());
+
         // 生成任务ID（供三表共用）
         Long taskId = IdUtil.getSnowflakeNextId();
 
         // 1. 创建评估任务
         AssessmentTask task = AssessmentTask.builder()
                 .id(taskId)
-                .doctorId(DefaultValue.DEFAULT_DOCTOR_ID)
+                .doctorId(child.getDoctorId())
                 .childId(childId)
                 .taskNo(taskNo)
                 .taskStatus(DefaultValue.DEFAULT_TASK_STATUS)
@@ -107,6 +121,7 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         ThrowUtils.throwIf(id == null, ErrorCode.PARAMS_ERROR, "id不能为空");
         AssessmentTask task = assessmentTaskMapper.getById(id);
         ThrowUtils.throwIf(task == null, ErrorCode.NOT_FOUND_ERROR, "评估任务不存在");
+        childDoctorBinding.checkReadAccess(task.getDoctorId());
         AssessmentTaskVO taskVO = new AssessmentTaskVO();
         BeanUtil.copyProperties(task, taskVO);
         return taskVO;
@@ -137,6 +152,10 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
                 ErrorCode.PARAMS_ERROR, "排序仅支持ascend/descend");
         pageRequest.setSortOrder(sortOrder.equalsIgnoreCase("ascend") ? "ASC" : "DESC");
 
+        Long doctorScope = childDoctorBinding.currentDoctorScope();
+        if (doctorScope != null) pageRequest.setDoctorId(doctorScope);
+        ThrowUtils.throwIf(!List.of("id", "task_no", "task_status", "current_step", "create_time", "update_time").contains(sortField),
+                ErrorCode.PARAMS_ERROR, "不支持的排序字段");
         // 数据库查询
         PageHelper.startPage(current, pageSize);
         List<AssessmentTask> list = assessmentTaskMapper.list(pageRequest);
@@ -156,6 +175,7 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
     @Override
     public AssessmentForm1VO getForm1ByTaskId(Long taskId) {
         ThrowUtils.throwIf(taskId == null, ErrorCode.PARAMS_ERROR, "任务ID不能为空");
+        getById(taskId);
         AssessmentForm1 form1 = assessmentForm1Mapper.getByTaskId(taskId);
         ThrowUtils.throwIf(form1 == null, ErrorCode.NOT_FOUND_ERROR, "一阶段表单不存在");
         AssessmentForm1VO vo = new AssessmentForm1VO();
@@ -169,6 +189,7 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
     @Override
     public AssessmentForm2VO getForm2ByTaskId(Long taskId) {
         ThrowUtils.throwIf(taskId == null, ErrorCode.PARAMS_ERROR, "任务ID不能为空");
+        getById(taskId);
         AssessmentForm2 form2 = assessmentForm2Mapper.getByTaskId(taskId);
         ThrowUtils.throwIf(form2 == null, ErrorCode.NOT_FOUND_ERROR, "二阶段表单不存在");
         AssessmentForm2VO vo = new AssessmentForm2VO();
@@ -185,6 +206,11 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         Long id = deleteRequest.getId();
         ThrowUtils.throwIf(id == null, ErrorCode.PARAMS_ERROR, "id不能为空");
 
+        AssessmentTask task = assessmentTaskMapper.getById(id);
+        ThrowUtils.throwIf(task == null, ErrorCode.NOT_FOUND_ERROR, "评估任务不存在");
+        // 和发布、开始、转接操作共用儿童行锁，避免删除与转接并发。
+        childInfoMapper.getByIdForUpdate(task.getChildId());
+
         // 删除评估任务
         boolean taskResult = assessmentTaskMapper.deleteById(id);
         ThrowUtils.throwIf(!taskResult, ErrorCode.OPERATION_ERROR, "删除评估任务失败");
@@ -199,7 +225,7 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
     }
 
     /**
-     * 开始任务：分配医生 + 更新状态为进行中
+     * 开始任务：校验负责医生并更新状态为进行中
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -208,7 +234,10 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         // 校验任务存在
         AssessmentTask task = assessmentTaskMapper.getById(id);
         ThrowUtils.throwIf(task == null, ErrorCode.NOT_FOUND_ERROR, "评估任务不存在");
-        // 更新医生 + 状态
+        // 与绑定变更共用儿童行锁，防止转交与开始任务并发。
+        ChildInfo child = childInfoMapper.getByIdForUpdate(task.getChildId());
+        ThrowUtils.throwIf(child == null, ErrorCode.NOT_FOUND_ERROR, "儿童信息不存在");
+        childDoctorBinding.checkAssessmentAccess(child.getDoctorId());
         Long doctorId = BaseContext.getCurrentId();
         boolean result = assessmentTaskMapper.updateStart(id, doctorId);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -236,6 +265,8 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         }
         String diagnosticBasis = dto.getDiagnosticBasis();
         ThrowUtils.throwIf(StrUtil.hasBlank(diagnosticBasis), ErrorCode.PARAMS_ERROR, "诊断依据不能为空");
+
+        requireWritableTask(taskId, 1);
 
         // 更新一阶段表单
         AssessmentForm1 form1 = new AssessmentForm1();
@@ -273,6 +304,8 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         String finalConclusion = dto.getFinalConclusion();
         ThrowUtils.throwIf(StrUtil.hasBlank(finalConclusion), ErrorCode.PARAMS_ERROR, "最终诊断结论不能为空");
 
+        requireWritableTask(taskId, 2);
+
         // 更新二阶段表单
         AssessmentForm2 form2 = new AssessmentForm2();
         BeanUtil.copyProperties(dto, form2);
@@ -284,4 +317,13 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         ThrowUtils.throwIf(!statusResult, ErrorCode.OPERATION_ERROR);
         return true;
     }
+    private void requireWritableTask(Long taskId, int step) {
+        AssessmentTask task = assessmentTaskMapper.getById(taskId);
+        ThrowUtils.throwIf(task == null, ErrorCode.NOT_FOUND_ERROR, "评估任务不存在");
+        childDoctorBinding.checkAssessmentAccess(task.getDoctorId());
+        ThrowUtils.throwIf(!Integer.valueOf(1).equals(task.getTaskStatus())
+                        || !Integer.valueOf(step).equals(task.getCurrentStep()),
+                ErrorCode.OPERATION_ERROR, "任务状态或评估阶段不正确，请刷新后重试");
+    }
+
 }

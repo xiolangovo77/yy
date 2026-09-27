@@ -25,9 +25,14 @@ public interface AssessmentTaskMapper {
     List<AssessmentTask> list(AssessmentTaskPageRequestDTO pageRequest);
 
     /**
-     * 开始任务：分配医生 + 更新状态为进行中
+     * 开始任务：校验负责医生并更新状态为进行中
      */
     boolean updateStart(Long id, Long doctorId);
+
+    /** 查询未删除任务，每个儿童同一时间只能有一个有效任务。 */
+    List<AssessmentTask> listByChildId(Long childId);
+
+    int reassignPendingByChildId(Long childId, Long doctorId);
 
     /**
      * 更新当前步骤

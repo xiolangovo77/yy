@@ -33,6 +33,10 @@ public interface ChildInfoMapper {
      */
     ChildInfo getById(Long id);
 
+    ChildInfo getByIdForUpdate(Long id);
+
+    long countByDoctorId(Long id);
+
     /**
      * 修改儿童信息
      * @param childInfo

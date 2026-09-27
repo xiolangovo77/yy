@@ -4,14 +4,15 @@
 
 <!--    添加儿童信息-->
     <insert id="add" parameterType="com.ecnu.model.entity.ChildInfo">
-        INSERT INTO child_info(id, child_no, child_name, age, gender, assess_type, remark, is_deleted, create_time, update_time)
-        VALUES(#{id}, #{childNo}, #{childName}, #{age}, #{gender}, #{assessType}, #{remark}, #{isDeleted}, #{createTime}, #{updateTime})
+        INSERT INTO child_info(id, child_no, child_name, doctor_id, age, gender, assess_type, remark, is_deleted, create_time, update_time)
+        VALUES(#{id}, #{childNo}, #{childName}, #{doctorId}, #{age}, #{gender}, #{assessType}, #{remark}, #{isDeleted}, #{createTime}, #{updateTime})
     </insert>
 
 <!--    修改儿童信息-->
     <update id="update" parameterType="com.ecnu.model.entity.ChildInfo">
         UPDATE child_info
         <set>
+            doctor_id = #{doctorId},
             <if test="childNo != null and childNo != ''">
                 child_no = #{childNo},
             </if>
@@ -44,14 +45,14 @@
 
 <!--    根据id获取儿童信息-->
     <select id="getById" resultType="com.ecnu.model.entity.ChildInfo">
-        select id, child_no, child_name, age, gender, assess_type, remark, is_deleted, create_time, update_time
+        select id, child_no, child_name, doctor_id, age, gender, assess_type, remark, is_deleted, create_time, update_time
         from child_info
         WHERE id = #{id} AND is_deleted = 0
     </select>
 
 <!--    分页获取儿童信息-->
     <select id="list" resultType="com.ecnu.model.entity.ChildInfo">
-        select id, child_no, child_name, age, gender, assess_type, remark, is_deleted, create_time, update_time
+        select id, child_no, child_name, doctor_id, age, gender, assess_type, remark, is_deleted, create_time, update_time
         from child_info
         WHERE is_deleted = 0
         <if test="childName != null and childName != ''">
@@ -63,7 +64,17 @@
         <if test="assessType != null and assessType != ''">
             AND assess_type = #{assessType}
         </if>
+        <if test="doctorId != null">
+            AND doctor_id = #{doctorId}
+        </if>
         ORDER BY ${sortField} ${sortOrder}
     </select>
 
+    <select id="getByIdForUpdate" resultType="com.ecnu.model.entity.ChildInfo">
+        SELECT * FROM child_info WHERE id = #{id} AND is_deleted = 0 FOR UPDATE
+    </select>
+
+    <select id="countByDoctorId" resultType="long">
+        SELECT COUNT(*) FROM child_info WHERE doctor_id = #{id} AND is_deleted = 0
+    </select>
 </mapper>

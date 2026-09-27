@@ -14,7 +14,7 @@
     </select>
 
     <update id="updateStart">
-        UPDATE assessment_task SET doctor_id = #{param2}, task_status = 1 WHERE id = #{param1} AND is_deleted = 0
+        UPDATE assessment_task SET task_status = 1 WHERE id = #{param1} AND doctor_id = #{param2} AND task_status = 0 AND is_deleted = 0
     </update>
 
     <update id="updateCurrentStep">
@@ -45,4 +45,12 @@
         UPDATE assessment_task SET is_deleted = 1 WHERE id = #{id} AND is_deleted = 0
     </delete>
 
+    <select id="listByChildId" resultType="com.ecnu.model.entity.AssessmentTask">
+        SELECT id, child_id, doctor_id, task_status, is_deleted
+        FROM assessment_task WHERE child_id = #{childId} AND is_deleted = 0
+    </select>
+    <update id="reassignPendingByChildId">
+        UPDATE assessment_task SET doctor_id = #{param2}, update_time = NOW()
+        WHERE child_id = #{param1} AND task_status = 0 AND is_deleted = 0
+    </update>
 </mapper>
