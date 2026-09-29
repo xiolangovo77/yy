@@ -137,13 +137,13 @@ onMounted(async () => {
 }
 
 .stat-value {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: bold;
   color: #303133;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 16px;
   color: #909399;
   margin-top: 4px;
 }
@@ -164,7 +164,7 @@ onMounted(async () => {
 }
 
 .quick-label {
-  font-size: 14px;
+  font-size: 16px;
   color: #606266;
 }
 </style>

@@ -1,27 +1,38 @@
 <template>
   <div class="report-viewer">
-    <header class="rv-header">
-      <div>
-        <span class="eyebrow">筛查报告 · 医生复核</span>
-        <h2>综合筛查结论（医生速览）</h2>
-        <p>六项结论概览，结合原始视频核对关键证据。</p>
-      </div>
-      <span class="report-badge">辅助筛查</span>
-    </header>
+    <section class="report-block" aria-label="综合筛查结论">
+      <header class="rv-header">
+        <div>
+          <span class="eyebrow">筛查报告 · 医生复核</span>
+          <h2>综合筛查结论（医生速览）</h2>
+          <p>六项结论概览，结合原始视频核对关键证据。</p>
+        </div>
+        <span class="report-badge">辅助筛查</span>
+      </header>
 
-    <div class="rv-main">
-      <div class="overview-grid">
-        <section v-for="section in overview" :key="section.number"
-          class="overview-card" :class="{ wide: section.number <= 2, conclusion: section.number === 4 }">
-          <div class="section-heading">
-            <span class="section-number">{{ String(section.number).padStart(2, '0') }}</span>
-            <h3>{{ section.title }}</h3>
-          </div>
-          <div v-if="section.html" class="markdown-body" v-html="section.html"></div>
-          <p v-else class="empty-text">报告中暂无此模块内容。</p>
-        </section>
+      <div class="rv-main">
+        <div class="overview-grid">
+          <section v-for="section in overview" :key="section.number"
+            class="overview-card" :class="{ wide: section.number <= 2, conclusion: section.number === 4 }">
+            <div class="section-heading">
+              <span class="section-number">{{ String(section.number).padStart(2, '0') }}</span>
+              <h3>{{ section.title }}</h3>
+            </div>
+            <div v-if="section.html" class="markdown-body" v-html="section.html"></div>
+            <p v-else class="empty-text">报告中暂无此模块内容。</p>
+          </section>
+        </div>
       </div>
+    </section>
 
+    <section class="report-block" aria-label="证据回看">
+      <header class="rv-header">
+        <div>
+          <span class="eyebrow">原始证据 · 视频核对</span>
+          <h2>证据回看</h2>
+          <p>通过可审计时间轴定位事件，结合原始视频核对观察依据。</p>
+        </div>
+      </header>
       <div class="evidence-grid">
         <section class="panel timeline-panel">
           <div class="panel-heading">
@@ -73,7 +84,7 @@
           <p v-if="videoMessage" class="feedback" role="status">{{ videoMessage }}</p>
         </section>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
@@ -174,54 +185,57 @@ watch([availableVideos, timeline], () => {
 </script>
 
 <style scoped>
-.report-viewer { --line: #e1e8ef; --muted: #64748b; --accent: #315c9e; color: #253449; background: #f5f7fa; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.report-viewer { --line: #e1e8ef; --muted: #64748b; --accent: #315c9e; color: #253449; display: flex; flex-direction: column; gap: 56px; }
+.report-block { min-width: 0; background: #f5f7fa; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 .report-viewer *, .report-viewer *::before, .report-viewer *::after { box-sizing: border-box; }
 .rv-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 24px; background: #fff; border-bottom: 1px solid var(--line); }
-.eyebrow { color: var(--accent); font-size: 12px; font-weight: 600; }
-.rv-header h2 { margin: 8px 0; font-size: 22px; line-height: 1.4; }
-.rv-header p, .panel-description { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0; }
-.report-badge { flex-shrink: 0; color: var(--accent); background: #edf3fb; border-radius: 20px; padding: 6px 12px; font-size: 12px; }
+.eyebrow { color: var(--accent); font-size: 14px; font-weight: 600; }
+.rv-header h2 { margin: 8px 0; font-size: 24px; line-height: 1.4; }
+.rv-header p, .panel-description { color: var(--muted); font-size: 15px; line-height: 1.6; margin: 0; }
+.report-badge { flex-shrink: 0; color: var(--accent); background: #edf3fb; border-radius: 20px; padding: 6px 12px; font-size: 14px; }
 .rv-main { padding: 20px; }
 .overview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .overview-card, .panel { min-width: 0; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
 .overview-card.wide { grid-column: 1 / -1; }
 .overview-card.conclusion { background: #f0f6ff; border-color: #cbdcf4; }
 .section-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.section-number { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; color: var(--accent); background: #eaf1fb; font-size: 13px; font-weight: 700; }
-h3 { font-size: 16px; line-height: 1.5; margin: 0; }
-.markdown-body { font-size: 14px; line-height: 1.9; overflow-wrap: anywhere; }
+.section-number { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; color: var(--accent); background: #eaf1fb; font-size: 15px; font-weight: 700; }
+h3 { font-size: 18px; line-height: 1.5; margin: 0; }
+.markdown-body { font-size: 16px; line-height: 1.9; overflow-wrap: anywhere; }
 .markdown-body :deep(p) { margin: 0 0 12px; }
 .markdown-body :deep(ul), .markdown-body :deep(ol) { padding-left: 22px; margin: 0 0 12px; }
 .markdown-body :deep(li) { margin-bottom: 6px; }
 .markdown-body :deep(strong) { color: #1d3555; font-weight: 600; }
-.markdown-body :deep(blockquote) { margin: 16px 0 0; padding: 10px 14px; border-left: 3px solid #c8d7ea; background: #f6f8fb; color: var(--muted); font-size: 13px; }
+.markdown-body :deep(blockquote) { margin: 16px 0 0; padding: 10px 14px; border-left: 3px solid #c8d7ea; background: #f6f8fb; color: var(--muted); font-size: 15px; }
 .markdown-body :deep(:last-child) { margin-bottom: 0; }
-.evidence-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 16px; margin-top: 24px; }
+.evidence-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 16px; padding: 20px; }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-.count { color: var(--muted); font-size: 12px; white-space: nowrap; }
-.report-viewer input, .report-viewer select { width: 100%; min-width: 0; border: 1px solid #d5dfeb; border-radius: 7px; padding: 9px 10px; font: inherit; font-size: 13px; color: inherit; background: #fff; margin: 14px 0; }
+.count { color: var(--muted); font-size: 14px; white-space: nowrap; }
+.report-viewer input, .report-viewer select { width: 100%; min-width: 0; border: 1px solid #d5dfeb; border-radius: 7px; padding: 9px 10px; font: inherit; font-size: 15px; color: inherit; background: #fff; margin: 14px 0; }
 .report-viewer :is(input, select, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .timeline { display: flex; flex-direction: column; gap: 10px; max-height: 520px; overflow-y: auto; padding: 2px; }
 .event { display: block; width: 100%; text-align: left; color: inherit; font: inherit; background: #fff; border: 1px solid var(--line); border-left: 3px solid #c1d3eb; border-radius: 8px; padding: 12px; cursor: pointer; overflow-wrap: anywhere; }
 .event:hover, .event.active { background: #f0f6ff; border-color: #9bb9e3; }
-.event-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; font-size: 14px; }
-.event-time { font-size: 12px; color: var(--accent); font-variant-numeric: tabular-nums; }
-.event-task, .event-source { display: block; color: var(--muted); font-size: 12px; line-height: 1.6; margin-top: 6px; }
-.event-metric, .event-description { display: block; font-size: 13px; line-height: 1.7; margin-top: 6px; }
+.event-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; font-size: 16px; }
+.event-time { font-size: 14px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.event-task, .event-source { display: block; color: var(--muted); font-size: 14px; line-height: 1.6; margin-top: 6px; }
+.event-metric, .event-description { display: block; font-size: 15px; line-height: 1.7; margin-top: 6px; }
 .event-source { padding-top: 8px; border-top: 1px dashed var(--line); }
 .video-panel video, .video-empty { width: 100%; aspect-ratio: 16 / 9; max-height: 450px; border-radius: 8px; background: #151e2c; }
-.video-empty { display: grid; place-items: center; color: #b7c3d4; font-size: 14px; }
-.video-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
-.selected-evidence { display: flex; flex-direction: column; gap: 7px; margin-top: 18px; padding: 14px; border-radius: 8px; background: #f0f6ff; font-size: 13px; }
-.feedback { background: #fff8eb; color: #866126; padding: 12px; border-radius: 7px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
-.empty-text { font-size: 14px; color: var(--muted); line-height: 1.7; }
+.video-empty { display: grid; place-items: center; color: #b7c3d4; font-size: 16px; }
+.video-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+.selected-evidence { display: flex; flex-direction: column; gap: 7px; margin-top: 18px; padding: 14px; border-radius: 8px; background: #f0f6ff; font-size: 15px; }
+.feedback { background: #fff8eb; color: #866126; padding: 12px; border-radius: 7px; font-size: 15px; line-height: 1.6; overflow-wrap: anywhere; }
+.empty-text { font-size: 16px; color: var(--muted); line-height: 1.7; }
 @media (max-width: 1000px) { .evidence-grid { grid-template-columns: 1fr; } }
 @media (max-width: 640px) {
+  .report-viewer { gap: 36px; }
   .rv-header { padding: 18px; align-items: flex-start; }
-  .rv-header h2 { font-size: 19px; }
+  .rv-header h2 { font-size: 21px; }
   .report-badge { display: none; }
   .rv-main { padding: 12px; }
   .overview-grid { grid-template-columns: 1fr; }
+  .evidence-grid { padding: 12px; }
   .overview-card, .panel { padding: 16px; }
 }
 </style>

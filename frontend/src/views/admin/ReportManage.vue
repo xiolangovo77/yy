@@ -78,7 +78,7 @@
           </el-upload>
           <div v-if="uploading" style="margin-top: 8px">
             <el-progress :percentage="100" :indeterminate="true" />
-            <span style="font-size: 12px; color: #909399">正在上传中...</span>
+            <span style="font-size: 14px; color: #909399">正在上传中...</span>
           </div>
         </el-form-item>
         <el-form-item label="报告URL" v-if="isEdit" prop="reportUrl">
@@ -277,7 +277,7 @@ onMounted(async () => {
   background: #fff;
   border-radius: 4px;
   line-height: 1.7;
-  font-size: 14px;
+  font-size: 16px;
   color: #303133;
   max-height: 600px;
   overflow-y: auto;
@@ -292,9 +292,9 @@ onMounted(async () => {
   color: #1a1a1a;
 }
 
-.markdown-body :deep(h1) { font-size: 24px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-.markdown-body :deep(h2) { font-size: 20px; }
-.markdown-body :deep(h3) { font-size: 16px; }
+.markdown-body :deep(h1) { font-size: 26px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+.markdown-body :deep(h2) { font-size: 22px; }
+.markdown-body :deep(h3) { font-size: 18px; }
 
 .markdown-body :deep(p) { margin-bottom: 12px; }
 
@@ -323,7 +323,7 @@ onMounted(async () => {
   padding: 2px 6px;
   border-radius: 3px;
   font-family: Consolas, monospace;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .markdown-body :deep(pre) {

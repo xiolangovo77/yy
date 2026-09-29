@@ -171,7 +171,7 @@ async function handleRegister() {
 }
 
 .register-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
   color: #303133;
   text-align: center;
@@ -179,7 +179,7 @@ async function handleRegister() {
 }
 
 .register-subtitle {
-  font-size: 14px;
+  font-size: 16px;
   color: #909399;
   text-align: center;
   margin-bottom: 30px;
@@ -187,7 +187,7 @@ async function handleRegister() {
 
 .register-footer {
   text-align: center;
-  font-size: 14px;
+  font-size: 16px;
   color: #909399;
 }
 

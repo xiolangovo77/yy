@@ -5,7 +5,7 @@
     </div>
 
     <el-card shadow="never" style="margin-bottom: 20px">
-      <el-descriptions :column="4" border size="small" v-loading="taskLoading">
+      <el-descriptions class="task-summary" :column="4" border v-loading="taskLoading">
         <el-descriptions-item label="任务编号">{{ taskInfo.taskNo }}</el-descriptions-item>
         <el-descriptions-item label="关联儿童">{{ childName || taskInfo.childId }}</el-descriptions-item>
         <el-descriptions-item label="任务状态">
@@ -52,7 +52,7 @@
       <el-col :span="12">
         <el-card shadow="never">
           <template #header><span class="form-title">阶段一：初步筛查评估</span></template>
-          <el-form ref="form1Ref" :model="form1" :rules="form1Rules" :disabled="taskLoading || !!formLoadError || form1Submitting" label-width="100px" size="default">
+          <el-form ref="form1Ref" :model="form1" :rules="form1Rules" :disabled="taskLoading || !!formLoadError || form1Submitting" label-width="120px" size="default">
             <el-form-item label="疾病判定" prop="diseaseType">
               <el-select v-model="form1.diseaseType" placeholder="请选择疾病判定结果" style="width: 100%">
                 <el-option label="ASD - 自闭症谱系障碍" value="ASD" />
@@ -126,7 +126,7 @@
       <!-- 阶段二评估表单 -->
       <el-card shadow="never">
         <template #header><span class="form-title">阶段二：综合诊断确认</span></template>
-        <el-form ref="form2Ref" :model="form2" :rules="form2Rules" :disabled="taskLoading || !!formLoadError || form2Submitting" label-width="100px" size="default">
+        <el-form ref="form2Ref" :model="form2" :rules="form2Rules" :disabled="taskLoading || !!formLoadError || form2Submitting" label-width="120px" size="default">
           <el-form-item label="疾病判定" prop="diseaseType">
             <el-select v-model="form2.diseaseType" placeholder="请选择疾病判定结果" style="width: 100%">
               <el-option label="ASD - 自闭症谱系障碍" value="ASD" />
@@ -158,7 +158,7 @@
           </el-form-item>
           <el-divider content-position="left">报告评价评分</el-divider>
           <p class="score-hint">以下三项均为1–5分，分数越高表示相应程度越高。</p>
-          <el-form-item v-for="field in stageTwoScores" :key="field.key" :label="field.label" :prop="field.key" label-width="150px">
+          <el-form-item v-for="field in stageTwoScores" :key="field.key" :label="field.label" :prop="field.key" label-width="180px">
             <el-radio-group v-model="form2[field.key]">
               <el-radio-button v-for="score in 5" :key="score" :value="score">{{ score }}分</el-radio-button>
             </el-radio-group>
@@ -395,14 +395,24 @@ onMounted(() => loadTask())
 </script>
 
 <style scoped>
+.task-summary :deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
+  font-size: 18px;
+  line-height: 1.6;
+  padding: 14px 16px;
+}
+.task-summary :deep(.el-tag) {
+  font-size: 16px;
+  height: 30px;
+  padding: 0 10px;
+}
 .form-title {
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px;
 }
 .reference-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .main-video-player { background: #000; border-radius: 4px; overflow: hidden; }
 .main-video-player video { display: block; width: 100%; max-height: 400px; }
-.score-hint { color: #606266; font-size: 13px; margin: 0 0 20px; }
-.score-field p { color: #909399; font-size: 13px; margin: 0 0 8px; line-height: 1.6; }
+.score-hint { color: #606266; font-size: 15px; margin: 0 0 20px; }
+.score-field p { color: #909399; font-size: 15px; margin: 0 0 8px; line-height: 1.6; }
 .behavior-description :deep(.el-form-item__label) { line-height: 1.6; height: auto; }
 </style>

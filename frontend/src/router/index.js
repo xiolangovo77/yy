@@ -79,7 +79,7 @@ const routes = [
     children: [
       {
         path: '',
-        redirect: '/doctor/dashboard'
+        redirect: '/doctor/introduction'
       },
       {
         path: 'dashboard',
@@ -139,7 +139,7 @@ router.beforeEach((to) => {
 
   // 已登录用户访问登录/注册页 → 跳转对应首页
   if (to.meta.guest && loggedIn) {
-    return role === 1 ? '/admin/dashboard' : '/doctor/dashboard'
+    return role === 1 ? '/admin/dashboard' : '/doctor/introduction'
   }
 
   // 需要认证的路由 → 检查登录状态
@@ -150,7 +150,7 @@ router.beforeEach((to) => {
 
     // 检查管理员权限
     if (to.matched.some(record => record.meta.requireAdmin) && role !== 1) {
-      return '/doctor/dashboard'
+      return '/doctor/introduction'
     }
 
     // 检查医生权限

@@ -127,14 +127,14 @@ function handleCommand(command) {
 
 .logo-container h2 {
   color: #fff;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   margin: 0;
 }
 
 .logo-sub {
   color: #bfcbd9;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .admin-header {
@@ -157,7 +157,7 @@ function handleCommand(command) {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   color: #606266;
 }
 

@@ -33,7 +33,7 @@
           <template #header>
             <span style="font-weight: 600">编辑资料</span>
           </template>
-          <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" size="default">
+          <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" size="default">
             <el-form-item label="姓名" prop="doctorName">
               <el-input v-model="form.doctorName" placeholder="请输入姓名" />
             </el-form-item>

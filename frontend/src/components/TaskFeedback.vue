@@ -89,7 +89,7 @@ watch(() => props.taskId, loadFeedback, { immediate: true })
 
 <style scoped>
 .feedback-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.feedback-title { font-size: 16px; font-weight: 600; }
+.feedback-title { font-size: 18px; font-weight: 600; }
 .feedback-hint { color: #606266; margin: 0 0 20px; }
 .suggestions { white-space: pre-wrap; overflow-wrap: anywhere; }
 </style>

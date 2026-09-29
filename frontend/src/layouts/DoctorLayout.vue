@@ -14,6 +14,10 @@
           text-color="#fff"
           active-text-color="#ffd04b"
         >
+          <el-menu-item index="/doctor/introduction">
+            <el-icon><Document /></el-icon>
+            <span>项目介绍</span>
+          </el-menu-item>
           <el-menu-item index="/doctor/dashboard">
             <el-icon><List /></el-icon>
             <span>我的任务</span>
@@ -21,10 +25,6 @@
           <el-menu-item index="/doctor/profile">
             <el-icon><UserFilled /></el-icon>
             <span>个人主页</span>
-          </el-menu-item>
-          <el-menu-item index="/doctor/introduction">
-            <el-icon><Document /></el-icon>
-            <span>项目介绍</span>
           </el-menu-item>
         </el-menu>
       </div>
@@ -81,7 +81,7 @@ function handleLogout() {
 
 .system-title {
   color: #fff;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   margin: 0;
   white-space: nowrap;
@@ -89,6 +89,7 @@ function handleLogout() {
 
 .header-nav {
   flex: 1;
+  min-width: 0;
   margin: 0 30px;
 }
 
@@ -104,7 +105,7 @@ function handleLogout() {
 
 .welcome-text {
   color: #fff;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .doctor-main {

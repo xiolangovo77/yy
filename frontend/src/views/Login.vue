@@ -89,15 +89,18 @@ async function handleLogin() {
   try {
     const data = await userStore.login(form.account, form.password)
 
-    // 根据角色跳转
+    // 普通医生登录后统一先进入项目介绍页
     const redirect = route.query.redirect
-    if (redirect) {
+    if (Number(data.role) === 0) {
+      router.push('/doctor/introduction')
+      ElMessage.success('登录成功！')
+    } else if (redirect) {
       router.push(redirect)
-    } else if (data.role === 1) {
+    } else if (Number(data.role) === 1) {
       router.push('/admin/dashboard')
       ElMessage.success('登录成功，欢迎管理员！')
     } else {
-      router.push('/doctor/dashboard')
+      router.push('/doctor/introduction')
       ElMessage.success('登录成功！')
     }
   } catch (err) {
@@ -126,7 +129,7 @@ async function handleLogin() {
 }
 
 .login-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
   color: #303133;
   text-align: center;
@@ -134,7 +137,7 @@ async function handleLogin() {
 }
 
 .login-subtitle {
-  font-size: 14px;
+  font-size: 16px;
   color: #909399;
   text-align: center;
   margin-bottom: 30px;
@@ -142,7 +145,7 @@ async function handleLogin() {
 
 .login-footer {
   text-align: center;
-  font-size: 14px;
+  font-size: 16px;
   color: #909399;
 }
 

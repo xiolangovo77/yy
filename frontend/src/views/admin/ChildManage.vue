@@ -360,6 +360,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.binding-hint { color: #909399; font-size: 12px; line-height: 1.6; margin-top: 6px; }
+.binding-hint { color: #909399; font-size: 14px; line-height: 1.6; margin-top: 6px; }
 .transfer-action { display: inline-block; margin: 0 12px; }
 </style>

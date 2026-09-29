@@ -80,7 +80,7 @@
           </el-upload>
           <div v-if="uploading" style="margin-top: 8px">
             <el-progress :percentage="100" :indeterminate="true" />
-            <span style="font-size: 12px; color: #909399">正在上传中...</span>
+            <span style="font-size: 14px; color: #909399">正在上传中...</span>
           </div>
         </el-form-item>
         <el-form-item label="视频URL" v-if="isEdit" prop="videoUrl">
