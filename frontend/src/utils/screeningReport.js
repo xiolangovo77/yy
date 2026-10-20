@@ -38,14 +38,14 @@ export function parseDoctorOverview(md = '') {
 
 export function parseReportTimeline(md = '') {
   const block = md.match(/<!--\s*REPORT_DATA_START\s*-->([\s\S]*?)<!--\s*REPORT_DATA_END\s*-->/)
-  if (!block) return { events: [], error: '报告未提供时间轴数据，仍可阅读上方六项结论。' }
+  if (!block) return { events: [], error: '报告未提供时间轴数据，仍可阅读上方结论。' }
   try {
     const json = block[1].match(/```json\s*([\s\S]*?)```/i)
     const data = JSON.parse(json ? json[1] : block[1].trim())
     if (!data || (data.timeline != null && !Array.isArray(data.timeline))) throw new Error('Invalid timeline')
     return { events: (data.timeline || []).filter(event => event && typeof event === 'object' && !Array.isArray(event)), error: '' }
   } catch {
-    return { events: [], error: '时间轴数据解析失败，仍可阅读上方六项结论。' }
+    return { events: [], error: '时间轴数据解析失败，仍可阅读上方结论。' }
   }
 }
 

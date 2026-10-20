@@ -104,21 +104,21 @@
       <div v-loading="resultLoading">
         <el-descriptions v-if="form1Data.diseaseType || form2Data.diseaseType" :column="isMobile ? 1 : 2" :direction="isMobile ? 'vertical' : 'horizontal'" border size="small">
           <el-descriptions-item label="阶段一疾病判定">{{ form1Data.diseaseType || '--' }}</el-descriptions-item>
-          <el-descriptions-item label="阶段一诊断信心">{{ form1Data.confidence ?? '--' }}</el-descriptions-item>
-          <el-descriptions-item label="阶段一诊断依据" :span="2">{{ form1Data.diagnosticBasis || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="阶段一判断信心">{{ form1Data.confidence ?? '--' }}</el-descriptions-item>
+          <el-descriptions-item label="阶段一判断依据" :span="2">{{ form1Data.diagnosticBasis || '--' }}</el-descriptions-item>
           <el-descriptions-item v-for="field in stageOneScores" :key="field.key" :label="field.label + '（1–5分）'">
             {{ form1Data[field.key] ?? '--' }}
           </el-descriptions-item>
-          <el-descriptions-item label="重复刻板或感觉异常行为" :span="2">
+          <el-descriptions-item label="重复刻板或感觉异常行为问题严重程度" :span="2">
             <span style="white-space: pre-wrap; overflow-wrap: anywhere">{{ form1Data.repetitiveBehavior || '--' }}</span>
           </el-descriptions-item>
           <el-descriptions-item label="阶段二疾病判定">{{ form2Data.diseaseType || '--' }}</el-descriptions-item>
-          <el-descriptions-item label="阶段二诊断信心">{{ form2Data.confidence ?? '--' }}</el-descriptions-item>
-          <el-descriptions-item label="阶段二诊断依据" :span="2">{{ form2Data.diagnosticBasis || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="阶段二判断信心">{{ form2Data.confidence ?? '--' }}</el-descriptions-item>
+          <el-descriptions-item label="阶段二判断依据" :span="2">{{ form2Data.diagnosticBasis || '--' }}</el-descriptions-item>
           <el-descriptions-item v-for="field in stageTwoScores" :key="field.key" :label="field.label + '（1–5分）'">
             {{ form2Data[field.key] ?? '--' }}
           </el-descriptions-item>
-          <el-descriptions-item label="最终诊断结论" :span="2">
+          <el-descriptions-item label="最终判断结论" :span="2">
             <span style="font-weight: 600; color: #e6a23c">{{ form2Data.finalConclusion || '--' }}</span>
           </el-descriptions-item>
         </el-descriptions>

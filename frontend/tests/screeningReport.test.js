@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { compileScript, parse } from '@vue/compiler-sfc'
 import { effectScope, nextTick, reactive } from 'vue'
 import { parseDoctorOverview, parseReportTimeline, findVideo, formatTime } from '../src/utils/screeningReport.js'
 
-const md = readFileSync(new URL('../../llm_v9_10cases_20260805_202315/case_00072.md', import.meta.url), 'utf8')
+const fixturePath = [
+  new URL('../../llm_v9_10cases_20260805_202315/case_00072.md', import.meta.url),
+  new URL('../../../llm_v9_10cases_20260805_202315/case_00072.md', import.meta.url)
+].find(path => existsSync(path))
+const md = readFileSync(fixturePath, 'utf8')
 
 test('样例的六项正文完整展示，且不混入后续家长版和审计内容', () => {
   const sections = parseDoctorOverview(md)

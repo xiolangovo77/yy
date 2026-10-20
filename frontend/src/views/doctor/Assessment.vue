@@ -23,7 +23,7 @@
 
     <el-steps :active="taskInfo.currentStep - 1" align-center style="margin-bottom: 30px">
       <el-step title="阶段一" description="初步筛查评估" />
-      <el-step title="阶段二" description="综合诊断确认" />
+      <el-step title="阶段二" description="综合判断确认" />
     </el-steps>
 
     <el-alert v-if="formLoadError" :title="formLoadError" type="error" :closable="false" show-icon style="margin-bottom: 20px">
@@ -56,11 +56,11 @@
             <el-form-item label="疾病判定" prop="diseaseType">
               <el-select v-model="form1.diseaseType" placeholder="请选择疾病判定结果" style="width: 100%">
                 <el-option label="ASD - 自闭症谱系障碍" value="ASD" />
-                <el-option label="TD - 典型发育" value="TD" />
-                <el-option label="DD - 发育迟缓" value="DD" />
+                <el-option label="TD - 正常儿童" value="TD" />
+                <el-option label="DD - 发育迟缓-智力障碍" value="DD" />
               </el-select>
             </el-form-item>
-            <el-form-item label="诊断信心" prop="confidence">
+            <el-form-item label="判断信心" prop="confidence">
               <el-slider
                   v-model="form1.confidence"
                   :min="0"
@@ -70,17 +70,13 @@
                   show-input
               />
             </el-form-item>
-            <el-form-item label="诊断依据" prop="diagnosticBasis">
+            <el-form-item label="判断依据" prop="diagnosticBasis">
               <el-input v-model="form1.diagnosticBasis" type="textarea" :rows="6"
-                placeholder="请输入诊断依据..." maxlength="2000" show-word-limit />
-            </el-form-item>
-            <el-form-item label="补充备注">
-              <el-input v-model="form1.doctorRemark" type="textarea" :rows="2"
-                placeholder="选填" maxlength="500" show-word-limit />
+                placeholder="请输入判断依据..." maxlength="2000" show-word-limit />
             </el-form-item>
             <el-divider content-position="left">社交行为观察</el-divider>
             <p class="score-hint">以下四项均为1–5分，分数越高表示严重程度越高。</p>
-            <el-form-item v-for="field in stageOneScores" :key="field.key" :label="field.label" :prop="field.key">
+            <el-form-item v-for="field in stageOneScores" :key="field.key" :label="field.label" :prop="field.key" class="severity-field">
               <div class="score-field">
                 <p>{{ field.description }}</p>
                 <el-radio-group v-model="form1[field.key]">
@@ -88,7 +84,7 @@
                 </el-radio-group>
               </div>
             </el-form-item>
-            <el-form-item label="重复刻板或感觉异常行为" prop="repetitiveBehavior" class="behavior-description">
+            <el-form-item label="重复刻板或感觉异常行为问题严重程度" prop="repetitiveBehavior" class="behavior-description">
               <el-input v-model="form1.repetitiveBehavior" type="textarea" :rows="4" maxlength="2000" show-word-limit placeholder="出现何种重复动作、刻板摆弄物体、异常感觉兴趣等？未观察到时请填写“未观察到”。" />
             </el-form-item>
             <el-form-item>
@@ -102,7 +98,7 @@
     </el-row>
 
     <!-- ==================== 阶段二：主视频、报告与评估表单 ==================== -->
-    <template v-if="taskInfo.currentStep === 2 && taskInfo.taskStatus !== 2">
+    <template v-if="taskInfo.currentStep === 2 && !assessmentComplete">
       <el-card shadow="never" v-loading="videosLoading" style="margin-bottom: 20px">
         <template #header>
           <div class="reference-header">
@@ -125,16 +121,21 @@
 
       <!-- 阶段二评估表单 -->
       <el-card shadow="never">
-        <template #header><span class="form-title">阶段二：综合诊断确认</span></template>
-        <el-form ref="form2Ref" :model="form2" :rules="form2Rules" :disabled="taskLoading || !!formLoadError || form2Submitting" label-width="120px" size="default">
+        <template #header><span class="form-title">阶段二：综合判断确认</span></template>
+        <el-alert class="stage-two-guide" title="基于报告，您是否需要修改阶段一的判断意见？" type="info" :closable="false" show-icon>
+          <p>1. 请阅读上方筛查报告，并结合主视频及证据回看，核对报告中的观察事实和判断依据。</p>
+          <p>2. 下方已带入阶段一的疾病判定、判断信心和判断依据。若报告使您的意见发生变化，请修改相应内容，并在“判断依据”中说明修改原因及相关证据；若无需修改，请保留原意见并补充说明维持判断的理由。</p>
+          <p>3. 综合视频观察与报告信息，填写您的最终判断结论，并完成报告评价评分和报告使用评价。所有必填项填写完整后，点击“提交最终评估，完成任务”。</p>
+        </el-alert>
+        <el-form ref="form2Ref" :model="form2" :rules="form2Rules" :disabled="taskLoading || !!formLoadError || form2Submitting || taskInfo.taskStatus === 2" label-width="120px" size="default" scroll-to-error>
           <el-form-item label="疾病判定" prop="diseaseType">
             <el-select v-model="form2.diseaseType" placeholder="请选择疾病判定结果" style="width: 100%">
               <el-option label="ASD - 自闭症谱系障碍" value="ASD" />
-              <el-option label="TD - 典型发育" value="TD" />
-              <el-option label="DD - 发育迟缓" value="DD" />
+              <el-option label="TD - 正常儿童" value="TD" />
+              <el-option label="DD - 发育迟缓-智力障碍" value="DD" />
             </el-select>
           </el-form-item>
-          <el-form-item label="诊断信心" prop="confidence">
+          <el-form-item label="判断信心" prop="confidence">
             <el-slider
                 v-model="form2.confidence"
                 :min="0"
@@ -144,17 +145,13 @@
                 show-input
             />
           </el-form-item>
-          <el-form-item label="诊断依据" prop="diagnosticBasis">
+          <el-form-item label="判断依据" prop="diagnosticBasis">
             <el-input v-model="form2.diagnosticBasis" type="textarea" :rows="4"
-              placeholder="请综合两个阶段的观察，详细描述诊断依据..." maxlength="2000" show-word-limit />
+              placeholder="请说明是否修改阶段一意见，并结合报告与视频证据填写修改或维持判断的理由..." maxlength="2000" show-word-limit />
           </el-form-item>
           <el-form-item label="最终结论" prop="finalConclusion">
             <el-input v-model="form2.finalConclusion" type="textarea" :rows="4"
-              placeholder="请输入最终诊断结论..." maxlength="2000" show-word-limit />
-          </el-form-item>
-          <el-form-item label="补充备注">
-            <el-input v-model="form2.doctorRemark" type="textarea" :rows="2"
-              placeholder="选填" maxlength="500" show-word-limit />
+              placeholder="请输入最终判断结论..." maxlength="2000" show-word-limit />
           </el-form-item>
           <el-divider content-position="left">报告评价评分</el-divider>
           <p class="score-hint">以下三项均为1–5分，分数越高表示相应程度越高。</p>
@@ -163,24 +160,29 @@
               <el-radio-button v-for="score in 5" :key="score" :value="score">{{ score }}分</el-radio-button>
             </el-radio-group>
           </el-form-item>
-          <el-form-item>
-            <el-button type="success" :loading="form2Submitting" size="large" @click="submitForm2">
-              提交最终评估，完成任务
-            </el-button>
-          </el-form-item>
         </el-form>
+        <TaskFeedback ref="feedbackRef" :task-id="route.params.taskId" integrated
+          :disabled="taskLoading || !!formLoadError || form2Submitting"
+          @submitted="taskInfo.feedbackSubmitted = true" />
+        <el-alert v-if="taskInfo.taskStatus === 2 && !taskInfo.feedbackSubmitted"
+          title="评估已保存，请完成报告使用评价后提交。" type="warning" :closable="false" style="margin-top: 16px" />
+        <div class="submit-final">
+          <el-button type="success" :loading="form2Submitting" :disabled="taskLoading || !!formLoadError" size="large" @click="submitForm2">
+            {{ taskInfo.taskStatus === 2 ? '提交报告使用评价，完成任务' : '提交最终评估，完成任务' }}
+          </el-button>
+        </div>
       </el-card>
     </template>
 
     <!-- 任务已完成 -->
-    <el-card v-if="taskInfo.taskStatus === 2" shadow="never" style="margin-bottom: 20px">
-      <el-result icon="success" title="评估已完成" :sub-title="taskInfo.feedbackSubmitted ? '评估与报告评价均已提交' : '请继续填写下方报告使用评价'">
+    <el-card v-if="assessmentComplete" shadow="never" style="margin-bottom: 20px">
+      <el-result icon="success" title="评估已完成" sub-title="评估与报告评价均已提交">
         <template #extra>
           <el-button type="primary" @click="goBack">返回任务列表</el-button>
         </template>
       </el-result>
     </el-card>
-    <TaskFeedback v-if="taskInfo.taskStatus === 2" :task-id="route.params.taskId" @submitted="taskInfo.feedbackSubmitted = true" />
+    <TaskFeedback v-if="assessmentComplete" :task-id="route.params.taskId" readonly />
   </div>
 </template>
 
@@ -218,13 +220,16 @@ const form1Submitting = ref(false)
 const form2Submitting = ref(false)
 const form1Ref = ref(null)
 const form2Ref = ref(null)
+const feedbackRef = ref(null)
 
 const taskInfo = reactive({
   taskNo: '', childId: '', taskStatus: 0, currentStep: 1, feedbackSubmitted: false
 })
 
+const assessmentComplete = computed(() => taskInfo.taskStatus === 2 && taskInfo.feedbackSubmitted)
+
 const form1 = reactive({
-  diseaseType: '', confidence: 0, diagnosticBasis: '', doctorRemark: '',
+  diseaseType: '', confidence: 0, diagnosticBasis: '',
   ...emptyScores(stageOneScores), repetitiveBehavior: ''
 })
 
@@ -235,21 +240,21 @@ const form1Rules = {
     { max: 2000, message: '行为描述不能超过2000字', trigger: 'blur' }
   ],
   diseaseType: [{ required: true, message: '请选择疾病判定', trigger: 'change' }],
-  confidence: [{ required: true, message: '请设置诊断信心', trigger: 'change' }],
-  diagnosticBasis: [{ required: true, message: '请输入诊断依据', trigger: 'blur' }]
+  confidence: [{ required: true, message: '请设置判断信心', trigger: 'change' }],
+  diagnosticBasis: [{ required: true, message: '请输入判断依据', trigger: 'blur' }]
 }
 
 const form2 = reactive({
-  diseaseType: '', confidence: 0, diagnosticBasis: '', finalConclusion: '', doctorRemark: '',
+  diseaseType: '', confidence: 0, diagnosticBasis: '', finalConclusion: '',
   ...emptyScores(stageTwoScores)
 })
 
 const form2Rules = {
   ...scoreRules(stageTwoScores),
   diseaseType: [{ required: true, message: '请选择疾病判定', trigger: 'change' }],
-  confidence: [{ required: true, message: '请设置诊断信心', trigger: 'change' }],
-  diagnosticBasis: [{ required: true, message: '请输入诊断依据', trigger: 'blur' }],
-  finalConclusion: [{ required: true, message: '请输入最终诊断结论', trigger: 'blur' }]
+  confidence: [{ required: true, message: '请设置判断信心', trigger: 'change' }],
+  diagnosticBasis: [{ required: true, message: '请输入判断依据', trigger: 'blur' }],
+  finalConclusion: [{ required: true, message: '请输入最终判断结论', trigger: 'blur' }]
 }
 
 function statusTag(s) {
@@ -307,7 +312,6 @@ async function loadStageOne(taskId) {
     form1.diseaseType = res.data.diseaseType || ''
     form1.confidence = res.data.confidence ?? 0
     form1.diagnosticBasis = res.data.diagnosticBasis || ''
-    form1.doctorRemark = res.data.doctorRemark || ''
     for (const field of stageOneScores) form1[field.key] = res.data[field.key] ?? null
     form1.repetitiveBehavior = res.data.repetitiveBehavior || ''
   }
@@ -339,7 +343,6 @@ async function loadTask() {
       form2.confidence = saved.confidence ?? form1.confidence
       form2.diagnosticBasis = saved.diagnosticBasis || form1.diagnosticBasis
       form2.finalConclusion = saved.finalConclusion || ''
-      form2.doctorRemark = saved.doctorRemark || ''
       for (const field of stageTwoScores) form2[field.key] = saved[field.key] ?? null
     }
   } catch (e) {
@@ -359,8 +362,7 @@ async function submitForm1() {
       confidence: form1.confidence,
       diagnosticBasis: form1.diagnosticBasis,
       ...Object.fromEntries(stageOneScores.map(field => [field.key, form1[field.key]])),
-      repetitiveBehavior: form1.repetitiveBehavior,
-      doctorRemark: form1.doctorRemark || undefined
+      repetitiveBehavior: form1.repetitiveBehavior
     })
     ElMessage.success('阶段一提交成功，进入阶段二')
     taskInfo.currentStep = 2
@@ -370,28 +372,35 @@ async function submitForm1() {
 
 async function submitForm2() {
   if (form2Submitting.value || taskLoading.value || formLoadError.value) return
-  const valid = await form2Ref.value.validate().catch(() => false)
-  if (!valid || form2Submitting.value) return
+  const valid = taskInfo.taskStatus === 2 || await form2Ref.value.validate().catch(() => false)
+  const feedbackValid = await feedbackRef.value?.validate()
+  if (!valid || !feedbackValid || form2Submitting.value) return
   form2Submitting.value = true
   try {
     await ElMessageBox.confirm(
-      '提交后评估任务将标记为已完成，并进入报告使用评价。确定提交吗？',
+      '将提交最终评估和报告使用评价，完成本次任务。确定提交吗？',
       '确认提交最终评估',
       { confirmButtonText: '确定提交', cancelButtonText: '再检查一下', type: 'warning' }
     )
-    await submitForm2Api({
-      taskId: route.params.taskId,
-      diseaseType: form2.diseaseType,
-      confidence: form2.confidence,
-      diagnosticBasis: form2.diagnosticBasis,
-      ...Object.fromEntries(stageTwoScores.map(field => [field.key, form2[field.key]])),
-      finalConclusion: form2.finalConclusion,
-      doctorRemark: form2.doctorRemark || undefined
-    })
-    ElMessage.success('评估已完成，请继续填写报告使用评价')
-    taskInfo.taskStatus = 2
+    if (taskInfo.taskStatus !== 2) {
+      await submitForm2Api({
+        taskId: route.params.taskId,
+        diseaseType: form2.diseaseType,
+        confidence: form2.confidence,
+        diagnosticBasis: form2.diagnosticBasis,
+        ...Object.fromEntries(stageTwoScores.map(field => [field.key, form2[field.key]])),
+        finalConclusion: form2.finalConclusion
+      })
+      taskInfo.taskStatus = 2
+    }
+    await feedbackRef.value.persist()
+    ElMessage.success('评估与报告使用评价已提交，任务已完成')
     await loadTask()
-  } catch (e) {} finally { form2Submitting.value = false }
+  } catch (e) {
+    if (taskInfo.taskStatus === 2 && !taskInfo.feedbackSubmitted && e !== 'cancel' && e !== 'close') {
+      ElMessage.warning('评估已保存，报告使用评价尚未提交成功，请重试')
+    }
+  } finally { form2Submitting.value = false }
 }
 
 onMounted(() => loadTask())
@@ -417,9 +426,13 @@ onMounted(() => loadTask())
 .main-video-player video { display: block; width: 100%; max-height: 400px; }
 .score-hint { color: #606266; font-size: 15px; margin: 0 0 20px; }
 .score-field p { color: #909399; font-size: 15px; margin: 0 0 8px; line-height: 1.6; }
+.severity-field :deep(.el-form-item__label),
 .behavior-description :deep(.el-form-item__label) { line-height: 1.6; height: auto; }
 .reference-header { flex-wrap: wrap; }
 .reference-header :deep(.el-tag) { max-width: 100%; height: auto; white-space: normal; overflow-wrap: anywhere; }
+.submit-final { margin-top: 24px; }
+.stage-two-guide { margin-bottom: 24px; }
+.stage-two-guide p { margin: 8px 0; line-height: 1.8; }
 .score-field { min-width: 0; width: 100%; }
 @media (max-width: 767px) {
   .task-summary :deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {

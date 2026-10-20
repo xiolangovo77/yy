@@ -1,8 +1,8 @@
 export const stageOneScores = [
-  { key: 'socialResponse', label: '社交回应', description: '主要看叫名、说话、主动接近时，儿童是否对人产生合理回应。' },
-  { key: 'eyeContact', label: '眼神交流', description: '是否自然、适当地看向互动者。' },
-  { key: 'socialReciprocity', label: '社会互惠性', description: '是否存在自然的来回互动。' },
-  { key: 'socialEmotionalExpression', label: '社会情绪表达', description: '情绪表达是否与互动情境匹配。' }
+  { key: 'socialResponse', label: '社交回应问题严重程度', description: '主要看叫名、说话、主动接近时，儿童是否对人产生合理回应。' },
+  { key: 'eyeContact', label: '眼神交流问题严重程度', description: '是否自然、适当地看向互动者。' },
+  { key: 'socialReciprocity', label: '社会互惠性问题严重程度', description: '是否存在自然的来回互动。' },
+  { key: 'socialEmotionalExpression', label: '社会情绪表达问题严重程度', description: '情绪表达是否与互动情境匹配。' }
 ]
 
 export const stageTwoScores = [

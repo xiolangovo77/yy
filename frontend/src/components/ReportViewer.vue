@@ -5,7 +5,7 @@
         <div>
           <span class="eyebrow">筛查报告 · 医生复核</span>
           <h2>综合筛查结论（医生速览）</h2>
-          <p>六项结论概览，结合原始视频核对关键证据。</p>
+          <p>五项结论概览，结合原始视频核对关键证据。</p>
         </div>
         <span class="report-badge">辅助筛查</span>
       </header>
@@ -22,7 +22,7 @@
             <p v-else class="empty-text">报告中暂无此模块内容。</p>
           </section>
 
-          <section class="overview-card wide combined-overview" aria-label="鉴别、证据限制与进一步评估">
+          <section class="overview-card wide combined-overview" aria-label="主要鉴别与证据限制">
             <div v-for="section in overview.slice(4)" :key="section.number" class="combined-section">
               <div class="section-heading">
                 <span class="section-number">{{ String(section.number).padStart(2, '0') }}</span>
@@ -108,7 +108,7 @@ const props = defineProps({
   videos: { type: Array, default: () => [] }
 })
 
-const overview = computed(() => parseDoctorOverview(props.md))
+const overview = computed(() => parseDoctorOverview(props.md).filter(section => section.number !== 6))
 const timelineData = computed(() => parseReportTimeline(props.md))
 const timeline = computed(() => timelineData.value.events)
 const timelineError = computed(() => timelineData.value.error)
