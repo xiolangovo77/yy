@@ -56,7 +56,7 @@
       </el-table>
 
       <div style="display: flex; justify-content: flex-end; margin-top: 16px">
-      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px">
+      <div class="pagination-bar">
         <span>共 {{ pagination.total }} 条</span>
         <el-select v-model="pagination.pageSize" style="width: 100px" @change="fetchData">
           <el-option :value="5" label="5条/页" />
@@ -102,7 +102,7 @@
     <!-- 查看评估结果对话框 -->
     <el-dialog v-model="resultVisible" title="评估结果" width="700px" destroy-on-close>
       <div v-loading="resultLoading">
-        <el-descriptions v-if="form1Data.diseaseType || form2Data.diseaseType" :column="2" border size="small">
+        <el-descriptions v-if="form1Data.diseaseType || form2Data.diseaseType" :column="isMobile ? 1 : 2" :direction="isMobile ? 'vertical' : 'horizontal'" border size="small">
           <el-descriptions-item label="阶段一疾病判定">{{ form1Data.diseaseType || '--' }}</el-descriptions-item>
           <el-descriptions-item label="阶段一诊断信心">{{ form1Data.confidence ?? '--' }}</el-descriptions-item>
           <el-descriptions-item label="阶段一诊断依据" :span="2">{{ form1Data.diagnosticBasis || '--' }}</el-descriptions-item>
@@ -131,12 +131,14 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 import { getTaskList, publishTask, deleteTask, getForm1ByTaskId, getForm2ByTaskId } from '@/api/task'
 import { getAllChildOptions } from '@/api/child'
 import { getAllDoctorOptions } from '@/api/doctor'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskFeedback from '@/components/TaskFeedback.vue'
 import { stageOneScores, stageTwoScores, emptyScores } from '@/utils/assessmentFields'
+
+const isMobile = useMediaQuery('(max-width: 767px)')
 
 const loading = ref(false)
 const tableData = ref([])

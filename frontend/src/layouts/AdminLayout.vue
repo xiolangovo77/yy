@@ -1,53 +1,25 @@
 <template>
   <el-container class="admin-layout">
     <!-- 左侧边栏 -->
-    <el-aside width="220px" class="admin-aside">
+    <el-aside v-if="!compactNavigation" width="220px" class="admin-aside">
       <div class="logo-container">
         <h2>筛查评估系统</h2>
         <span class="logo-sub">管理端</span>
       </div>
-      <el-menu
-        :default-active="activeMenu"
-        router
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409EFF"
-      >
-        <el-menu-item index="/admin/dashboard">
-          <el-icon><DataAnalysis /></el-icon>
-          <span>管理首页</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/doctors">
-          <el-icon><UserFilled /></el-icon>
-          <span>医生账号管理</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/children">
-          <el-icon><Avatar /></el-icon>
-          <span>儿童信息管理</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/videos">
-          <el-icon><VideoCameraFilled /></el-icon>
-          <span>视频管理</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/reports">
-          <el-icon><Document /></el-icon>
-          <span>报告表管理</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/tasks">
-          <el-icon><List /></el-icon>
-          <span>评估任务管理</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/introduction">
-          <el-icon><Document /></el-icon>
-          <span>项目介绍管理</span>
-        </el-menu-item>
-      </el-menu>
+      <AdminNavigation />
     </el-aside>
+
+    <el-drawer v-if="compactNavigation" v-model="menuOpen" title="管理端导航"
+      direction="ltr" size="min(280px, 86vw)" class="admin-navigation-drawer">
+      <AdminNavigation @navigate="menuOpen = false" />
+    </el-drawer>
 
     <!-- 右侧主体 -->
     <el-container>
       <el-header class="admin-header">
         <div class="header-left">
+          <el-button v-if="compactNavigation" :icon="Menu" aria-label="打开管理菜单"
+            :aria-expanded="menuOpen" @click="menuOpen = true" />
           <el-breadcrumb separator="/">
             <el-breadcrumb-item :to="{ path: '/admin/dashboard' }">管理端</el-breadcrumb-item>
             <el-breadcrumb-item>{{ currentTitle }}</el-breadcrumb-item>
@@ -57,7 +29,7 @@
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <el-icon><UserFilled /></el-icon>
-              {{ userStore.userInfo.doctorName || '管理员' }}
+              <span class="user-name">{{ userStore.userInfo.doctorName || '管理员' }}</span>
               <el-icon class="el-icon--right"><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
@@ -78,16 +50,20 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { ElMessageBox } from 'element-plus'
+import { ArrowDown, Menu, UserFilled } from '@element-plus/icons-vue'
+import AdminNavigation from '@/components/AdminNavigation.vue'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-const activeMenu = computed(() => route.path)
+const compactNavigation = useMediaQuery('(max-width: 1023px)')
+const menuOpen = ref(false)
+watch([() => route.path, compactNavigation], () => { menuOpen.value = false })
 const currentTitle = computed(() => route.meta.title || '')
 
 function handleCommand(command) {
@@ -163,6 +139,18 @@ function handleCommand(command) {
 
 .admin-main {
   background: #f0f2f5;
-  min-height: calc(100vh - 50px);
+  min-height: 0;
+}
+
+.admin-layout > .el-container { min-width: 0; }
+.header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.header-right { flex-shrink: 0; }
+.user-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 767px) {
+  .admin-header { padding: 0 12px; height: auto; min-height: 60px; gap: 8px; }
+  .header-left :deep(.el-breadcrumb) { font-size: 14px; line-height: 1.5; }
+  .header-left :deep(.el-breadcrumb__item:first-child) { display: none; }
+  .user-name { max-width: 80px; }
 }
 </style>

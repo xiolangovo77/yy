@@ -33,7 +33,7 @@
       </el-table>
 
       <div style="display: flex; justify-content: flex-end; margin-top: 16px">
-      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px">
+      <div class="pagination-bar">
         <span>共 {{ pagination.total }} 条</span>
         <el-select v-model="pagination.pageSize" style="width: 100px" @change="fetchData">
           <el-option :value="5" label="5条/页" />
@@ -117,7 +117,6 @@ import { getReportList, addReport, updateReport, deleteReport } from '@/api/repo
 import { uploadMD } from '@/api/common'
 import { getChildList } from '@/api/child'
 import { getDoctorList } from '@/api/doctor'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { marked } from 'marked'
 
 const loading = ref(false)
@@ -346,5 +345,12 @@ onMounted(async () => {
   border: none;
   border-top: 1px solid #eee;
   margin: 20px 0;
+}
+
+.markdown-body { overflow-wrap: anywhere; }
+.markdown-body :deep(img) { max-width: 100%; height: auto; }
+.markdown-body :deep(table) { display: block; overflow-x: auto; }
+@media (max-width: 767px) {
+  .markdown-body { padding: 12px; }
 }
 </style>

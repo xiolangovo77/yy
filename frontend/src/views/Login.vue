@@ -57,7 +57,6 @@ import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { User, Lock } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
@@ -113,7 +112,9 @@ async function handleLogin() {
 
 <style scoped>
 .login-container {
-  height: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
+  padding: 24px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -122,6 +123,7 @@ async function handleLogin() {
 
 .login-card {
   width: 420px;
+  max-width: 100%;
   padding: 40px;
   background: #fff;
   border-radius: 8px;
@@ -157,5 +159,10 @@ async function handleLogin() {
 
 .login-footer a:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 767px) {
+  .login-card { padding: 28px 20px; }
+  .login-title { font-size: 21px; }
 }
 </style>

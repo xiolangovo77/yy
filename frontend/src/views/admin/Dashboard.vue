@@ -5,8 +5,8 @@
     </div>
 
     <!-- 统计卡片 -->
-    <el-row :gutter="20" style="margin-bottom: 20px">
-      <el-col :span="8">
+    <el-row class="responsive-row" :gutter="20" style="margin-bottom: 20px">
+      <el-col :xs="24" :sm="8">
         <el-card shadow="hover" class="stat-card" v-loading="statsLoading">
           <div class="stat-content">
             <div class="stat-icon" style="background: #e6f7ff">
@@ -19,7 +19,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="8">
         <el-card shadow="hover" class="stat-card" v-loading="statsLoading">
           <div class="stat-content">
             <div class="stat-icon" style="background: #fff7e6">
@@ -32,7 +32,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="8">
         <el-card shadow="hover" class="stat-card" v-loading="statsLoading">
           <div class="stat-content">
             <div class="stat-icon" style="background: #f6ffed">
@@ -60,8 +60,8 @@
     <!-- 快捷入口 -->
     <el-card shadow="never">
       <template #header><span style="font-weight: 600">快捷操作</span></template>
-      <el-row :gutter="20">
-        <el-col :span="4" v-for="item in quickLinks" :key="item.path">
+      <el-row class="responsive-row" :gutter="20">
+        <el-col :xs="12" :sm="8" :lg="4" v-for="item in quickLinks" :key="item.path">
           <el-card shadow="hover" class="quick-card" @click="$router.push(item.path)">
             <div class="quick-icon">
               <el-icon :size="28"><component :is="item.icon" /></el-icon>
@@ -79,6 +79,7 @@ import { ref, onMounted } from 'vue'
 import { getDoctorList } from '@/api/doctor'
 import { getChildList } from '@/api/child'
 import { getTaskList } from '@/api/task'
+import { Avatar, Document, List, UserFilled, VideoCameraFilled } from '@element-plus/icons-vue'
 
 const stats = ref({
   doctorCount: 0,
@@ -89,11 +90,11 @@ const statsLoading = ref(true)
 const statsError = ref(false)
 
 const quickLinks = [
-  { path: '/admin/doctors', label: '医生管理', icon: 'UserFilled' },
-  { path: '/admin/children', label: '儿童管理', icon: 'Avatar' },
-  { path: '/admin/videos', label: '视频管理', icon: 'VideoCameraFilled' },
-  { path: '/admin/reports', label: '报告管理', icon: 'Document' },
-  { path: '/admin/tasks', label: '任务管理', icon: 'List' }
+  { path: '/admin/doctors', label: '医生管理', icon: UserFilled },
+  { path: '/admin/children', label: '儿童管理', icon: Avatar },
+  { path: '/admin/videos', label: '视频管理', icon: VideoCameraFilled },
+  { path: '/admin/reports', label: '报告管理', icon: Document },
+  { path: '/admin/tasks', label: '任务管理', icon: List }
 ]
 
 onMounted(async () => {

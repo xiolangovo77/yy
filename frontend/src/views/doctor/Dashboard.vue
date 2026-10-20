@@ -17,7 +17,37 @@
     </div>
 
     <div class="table-container">
-      <el-table :data="tableData" v-loading="loading" stripe>
+      <section v-if="compactList" v-loading="loading" class="task-cards" aria-label="我的任务列表" :aria-busy="loading">
+        <article v-for="row in tableData" :key="row.id" class="task-card">
+          <header class="task-card-header">
+            <h2>任务 {{ row.taskNo || '--' }}</h2>
+            <el-tag :type="statusTag(row.taskStatus)">{{ statusText(row.taskStatus) }}</el-tag>
+          </header>
+          <dl class="task-details">
+            <dt>关联儿童</dt>
+            <dd>{{ childNameMap[row.childId] || row.childId || '--' }}</dd>
+            <dt>当前步骤</dt>
+            <dd>{{ row.currentStep === 2 ? '阶段二' : '阶段一' }}</dd>
+            <dt>创建时间</dt>
+            <dd>{{ row.createTime?.replace('T', ' ') || '--' }}</dd>
+            <dt>任务ID</dt>
+            <dd>{{ row.id }}</dd>
+          </dl>
+          <div class="task-card-action">
+            <el-button v-if="row.taskStatus === 0" type="primary" :loading="row._starting" @click="handleStart(row)">
+              开始任务
+            </el-button>
+            <el-button v-else-if="row.taskStatus === 1" type="warning" @click="handleAssess(row)">
+              继续评估
+            </el-button>
+            <el-button v-else-if="row.taskStatus === 2" :type="row.feedbackSubmitted ? 'success' : 'primary'" @click="handleAssess(row)">
+              {{ row.feedbackSubmitted ? '查看评价' : '填写评价' }}
+            </el-button>
+          </div>
+        </article>
+        <el-empty v-if="!loading && !tableData.length" description="暂无评估任务" :image-size="80" />
+      </section>
+      <el-table v-else :data="tableData" v-loading="loading" stripe>
         <el-table-column prop="id" label="任务ID" width="180" show-overflow-tooltip />
         <el-table-column prop="taskNo" label="任务编号" width="160" />
         <el-table-column label="关联儿童" width="140">
@@ -66,7 +96,7 @@
       </el-table>
 
       <div style="display: flex; justify-content: flex-end; margin-top: 16px">
-      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px">
+      <div class="pagination-bar task-pagination">
         <span>共 {{ pagination.total }} 条</span>
         <el-select v-model="pagination.pageSize" style="width: 100px" @change="fetchData">
           <el-option :value="5" label="5条/页" />
@@ -88,9 +118,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getTaskList, startTask } from '@/api/task'
 import { getAllChildOptions } from '@/api/child'
-import { ElMessage } from 'element-plus'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 
 const router = useRouter()
+const compactList = useMediaQuery('(max-width: 1023px)')
 const childNameMap = ref({})
 
 const loading = ref(false)
@@ -158,3 +189,61 @@ onMounted(async () => {
   fetchData()
 })
 </script>
+
+<style scoped>
+.task-cards {
+  display: grid;
+  gap: 12px;
+  min-height: 120px;
+}
+
+.task-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+}
+
+.task-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.task-card-header h2 {
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+  overflow-wrap: anywhere;
+}
+
+.task-card-header .el-tag { flex-shrink: 0; }
+
+.task-details {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px 12px;
+  font-size: 15px;
+}
+
+.task-details dt { color: #909399; }
+.task-details dd { margin: 0; color: #303133; overflow-wrap: anywhere; }
+.task-card-action { margin-top: 16px; }
+.task-card-action .el-button { width: 100%; min-height: 44px; }
+
+@media (max-width: 1023px) {
+  .task-pagination {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 12px 8px;
+    width: 100%;
+    align-items: center;
+  }
+  .task-pagination > span:first-child { grid-column: 1 / 3; }
+  .task-pagination > .el-select { grid-column: 3; justify-self: end; max-width: 100%; }
+  .task-pagination > .el-button { margin: 0; min-height: 40px; }
+}
+</style>

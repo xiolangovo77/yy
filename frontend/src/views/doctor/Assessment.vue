@@ -5,7 +5,7 @@
     </div>
 
     <el-card shadow="never" style="margin-bottom: 20px">
-      <el-descriptions class="task-summary" :column="4" border v-loading="taskLoading">
+      <el-descriptions class="task-summary" :column="isMobile ? 1 : isTablet ? 2 : 4" border v-loading="taskLoading">
         <el-descriptions-item label="任务编号">{{ taskInfo.taskNo }}</el-descriptions-item>
         <el-descriptions-item label="关联儿童">{{ childName || taskInfo.childId }}</el-descriptions-item>
         <el-descriptions-item label="任务状态">
@@ -31,25 +31,25 @@
     </el-alert>
 
     <!-- ==================== 阶段一：左视频 + 右表单 ==================== -->
-    <el-row v-if="taskInfo.currentStep === 1" :gutter="20">
+    <el-row v-if="taskInfo.currentStep === 1" :gutter="20" class="responsive-row">
       <!-- 左侧：视频 -->
-      <el-col :span="12">
+      <el-col :xs="24" :sm="24" :md="12">
         <el-card shadow="never" v-loading="videosLoading">
           <template #header>
-            <div style="display: flex; align-items: center; justify-content: space-between">
+            <div class="reference-header">
               <span class="form-title">主视频</span>
               <el-tag v-if="mainVideo" size="small">{{ mainVideo.videoName }}</el-tag>
             </div>
           </template>
           <div v-if="mainVideo" class="main-video-player">
-            <video :key="mainVideo.videoUrl" :src="mainVideo.videoUrl" controls preload="metadata" />
+            <video :key="mainVideo.videoUrl" :src="mainVideo.videoUrl" controls playsinline preload="metadata" />
           </div>
           <el-empty v-else-if="!videosLoading" :description="videosError || '暂无以 main 开头的主视频，请联系管理员上传'" />
         </el-card>
       </el-col>
 
       <!-- 右侧：阶段一评估表单 -->
-      <el-col :span="12">
+      <el-col :xs="24" :sm="24" :md="12">
         <el-card shadow="never">
           <template #header><span class="form-title">阶段一：初步筛查评估</span></template>
           <el-form ref="form1Ref" :model="form1" :rules="form1Rules" :disabled="taskLoading || !!formLoadError || form1Submitting" label-width="120px" size="default">
@@ -111,7 +111,7 @@
           </div>
         </template>
         <div v-if="mainVideo" class="main-video-player">
-          <video :key="mainVideo.videoUrl" :src="mainVideo.videoUrl" controls preload="metadata" />
+          <video :key="mainVideo.videoUrl" :src="mainVideo.videoUrl" controls playsinline preload="metadata" />
         </div>
         <el-empty v-else-if="!videosLoading" :description="videosError || '暂无以 main 开头的主视频，请联系管理员上传'" :image-size="60" />
       </el-card>
@@ -186,16 +186,19 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 import { useRoute, useRouter } from 'vue-router'
 import { getTaskById, getForm1ByTaskId, getForm2ByTaskId, submitForm1 as submitForm1Api, submitForm2 as submitForm2Api } from '@/api/task'
 import { getChildById } from '@/api/child'
 import { getAllChildVideos } from '@/api/video'
 import { isMainVideoName } from '@/utils/video'
 import { getReportList } from '@/api/report'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import ReportViewer from '@/components/ReportViewer.vue'
 import TaskFeedback from '@/components/TaskFeedback.vue'
 import { stageOneScores, stageTwoScores, emptyScores, scoreRules } from '@/utils/assessmentFields'
+
+const isMobile = useMediaQuery('(max-width: 767px)')
+const isTablet = useMediaQuery('(max-width: 1199px)')
 
 const route = useRoute()
 const router = useRouter()
@@ -415,4 +418,14 @@ onMounted(() => loadTask())
 .score-hint { color: #606266; font-size: 15px; margin: 0 0 20px; }
 .score-field p { color: #909399; font-size: 15px; margin: 0 0 8px; line-height: 1.6; }
 .behavior-description :deep(.el-form-item__label) { line-height: 1.6; height: auto; }
+.reference-header { flex-wrap: wrap; }
+.reference-header :deep(.el-tag) { max-width: 100%; height: auto; white-space: normal; overflow-wrap: anywhere; }
+.score-field { min-width: 0; width: 100%; }
+@media (max-width: 767px) {
+  .task-summary :deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
+    font-size: 16px;
+    padding: 10px;
+  }
+  .task-summary :deep(.el-descriptions__label) { width: 90px; }
+}
 </style>

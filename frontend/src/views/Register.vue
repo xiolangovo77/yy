@@ -13,12 +13,12 @@
         @submit.prevent="handleRegister"
       >
         <el-row :gutter="16">
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="姓名" prop="doctorName">
               <el-input v-model="form.doctorName" placeholder="请输入您的姓名" :prefix-icon="User" clearable />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="职称">
               <el-input v-model="form.title" placeholder="如：主任医师（选填）" :prefix-icon="Stamp" clearable />
             </el-form-item>
@@ -82,7 +82,6 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { User, Stamp, OfficeBuilding, Phone, Key, Lock } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -164,6 +163,7 @@ async function handleRegister() {
 
 .register-card {
   width: 520px;
+  max-width: 100%;
   padding: 40px;
   background: #fff;
   border-radius: 8px;
@@ -199,5 +199,10 @@ async function handleRegister() {
 
 .register-footer a:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 767px) {
+  .register-container { padding: 24px 16px; }
+  .register-card { padding: 28px 20px; }
 }
 </style>

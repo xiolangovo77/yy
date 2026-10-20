@@ -33,7 +33,7 @@
       </el-table>
 
       <div style="display: flex; justify-content: flex-end; margin-top: 16px">
-      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px">
+      <div class="pagination-bar">
         <span>共 {{ pagination.total }} 条</span>
         <el-select v-model="pagination.pageSize" style="width: 100px" @change="fetchData">
           <el-option :value="5" label="5条/页" />
@@ -106,7 +106,6 @@ import { getVideoList, addVideo, updateVideo, deleteVideo } from '@/api/video'
 import { uploadMP4 } from '@/api/common'
 import { getChildList } from '@/api/child'
 import { getDoctorList } from '@/api/doctor'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { DEFAULT_VIDEO_NAME, isMainVideoName } from '@/utils/video'
 
 const loading = ref(false)

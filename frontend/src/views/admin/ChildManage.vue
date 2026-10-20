@@ -43,7 +43,7 @@
         </el-table-column>
         <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
         <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column label="操作" width="270" fixed="right">
+        <el-table-column label="操作" width="270" :fixed="isMobile ? false : 'right'">
           <template #default="{ row }">
             <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
             <el-tooltip :content="row.taskPublished ? '仅未开始且未删除的评估任务允许转接' : '当前无任务，可通过编辑设置负责医生'" :disabled="row.canTransferDoctor === true" placement="top">
@@ -57,7 +57,7 @@
       </el-table>
 
       <div style="display: flex; justify-content: flex-end; margin-top: 16px">
-      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px">
+      <div class="pagination-bar">
         <span>共 {{ pagination.total }} 条</span>
         <el-select v-model="pagination.pageSize" style="width: 100px" @change="fetchData">
           <el-option :value="5" label="5条/页" />
@@ -167,11 +167,13 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 import { getChildList, addChild, updateChild, deleteChild, transferChildDoctor } from '@/api/child'
 import { getAllDoctorOptions } from '@/api/doctor'
 import { getVideoList } from '@/api/video'
 import { getReportList } from '@/api/report'
-import { ElMessage, ElMessageBox } from 'element-plus'
+
+const isMobile = useMediaQuery('(max-width: 767px)')
 
 const loading = ref(false)
 const videoIds = ref(new Set())

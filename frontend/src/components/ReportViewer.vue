@@ -12,7 +12,7 @@
 
       <div class="rv-main">
         <div class="overview-grid">
-          <section v-for="section in overview" :key="section.number"
+          <section v-for="section in overview.slice(0, 4)" :key="section.number"
             class="overview-card" :class="{ wide: section.number <= 2, conclusion: section.number === 4 }">
             <div class="section-heading">
               <span class="section-number">{{ String(section.number).padStart(2, '0') }}</span>
@@ -20,6 +20,17 @@
             </div>
             <div v-if="section.html" class="markdown-body" v-html="section.html"></div>
             <p v-else class="empty-text">报告中暂无此模块内容。</p>
+          </section>
+
+          <section class="overview-card wide combined-overview" aria-label="鉴别、证据限制与进一步评估">
+            <div v-for="section in overview.slice(4)" :key="section.number" class="combined-section">
+              <div class="section-heading">
+                <span class="section-number">{{ String(section.number).padStart(2, '0') }}</span>
+                <h3>{{ section.title }}</h3>
+              </div>
+              <div v-if="section.html" class="markdown-body" v-html="section.html"></div>
+              <p v-else class="empty-text">报告中暂无此模块内容。</p>
+            </div>
           </section>
         </div>
       </div>
@@ -72,7 +83,7 @@
             </option>
           </select>
           <video v-if="selectedVideoUrl" :key="selectedVideoUrl" ref="videoRef" :src="selectedVideoUrl"
-            controls preload="metadata" @loadedmetadata="applyPendingSeek" @timeupdate="onTimeUpdate"
+            controls playsinline preload="metadata" @loadedmetadata="applyPendingSeek" @timeupdate="onTimeUpdate"
             @error="onVideoError"></video>
           <div v-else class="video-empty">暂无可播放的视频</div>
           <div class="video-meta"><span>{{ currentVideo?.videoName || '尚未加载视频' }}</span><span>{{ formatTime(currentTime) }}</span></div>
@@ -198,6 +209,9 @@ watch([availableVideos, timeline], () => {
 .overview-card, .panel { min-width: 0; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
 .overview-card.wide { grid-column: 1 / -1; }
 .overview-card.conclusion { background: #f0f6ff; border-color: #cbdcf4; }
+.combined-overview { display: grid; grid-template-columns: 1fr; gap: 0; }
+.combined-section { min-width: 0; }
+.combined-section + .combined-section { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
 .section-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .section-number { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; color: var(--accent); background: #eaf1fb; font-size: 15px; font-weight: 700; }
 h3 { font-size: 18px; line-height: 1.5; margin: 0; }
@@ -208,6 +222,8 @@ h3 { font-size: 18px; line-height: 1.5; margin: 0; }
 .markdown-body :deep(strong) { color: #1d3555; font-weight: 600; }
 .markdown-body :deep(blockquote) { margin: 16px 0 0; padding: 10px 14px; border-left: 3px solid #c8d7ea; background: #f6f8fb; color: var(--muted); font-size: 15px; }
 .markdown-body :deep(:last-child) { margin-bottom: 0; }
+.markdown-body :deep(table), .markdown-body :deep(pre) { display: block; max-width: 100%; overflow-x: auto; }
+.markdown-body :deep(img) { max-width: 100%; height: auto; }
 .evidence-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 16px; padding: 20px; }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .count { color: var(--muted); font-size: 14px; white-space: nowrap; }
@@ -235,7 +251,10 @@ h3 { font-size: 18px; line-height: 1.5; margin: 0; }
   .report-badge { display: none; }
   .rv-main { padding: 12px; }
   .overview-grid { grid-template-columns: 1fr; }
+  .combined-section + .combined-section { margin-top: 20px; padding-top: 20px; }
   .evidence-grid { padding: 12px; }
   .overview-card, .panel { padding: 16px; }
+  .panel-heading { flex-wrap: wrap; }
+  .report-viewer input, .report-viewer select { font-size: 16px; }
 }
 </style>

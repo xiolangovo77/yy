@@ -9,6 +9,7 @@
         <el-menu
           :default-active="activeMenu"
           mode="horizontal"
+          :ellipsis="false"
           router
           background-color="#409EFF"
           text-color="#fff"
@@ -45,7 +46,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { ElMessageBox } from 'element-plus'
+import { Document, List, UserFilled } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -110,6 +111,25 @@ function handleLogout() {
 
 .doctor-main {
   background: #f0f2f5;
-  min-height: calc(100vh - 60px);
+  min-height: 0;
+}
+
+@media (max-width: 1199px) {
+  .doctor-header { height: auto; flex-wrap: wrap; gap: 8px 12px; padding: 12px 16px 0; }
+  .header-left { flex: 1; min-width: 0; }
+  .system-title { white-space: normal; font-size: 18px; }
+  .header-nav { flex: 0 0 100%; order: 3; margin: 0; }
+  .header-nav .el-menu { --el-menu-horizontal-height: 48px; }
+  .header-nav :deep(.el-menu-item) { flex: 1; justify-content: center; padding: 0 8px; }
+  .welcome-text { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+@media (max-width: 767px) {
+  .doctor-header { padding: 12px 12px 0; }
+  .system-title { font-size: 17px; }
+  .header-right { gap: 8px; }
+  .welcome-text { display: none; }
+  .header-nav :deep(.el-menu-item) { min-width: 0; padding: 0 4px; font-size: 14px; }
+  .header-nav :deep(.el-menu-item .el-icon) { width: 18px; font-size: 18px; margin-right: 4px; }
 }
 </style>

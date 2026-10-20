@@ -10,7 +10,7 @@
     <el-alert v-if="loadFailed" title="评价加载失败，请重试" type="error" :closable="false">
       <el-button size="small" @click="loadFeedback">重新加载</el-button>
     </el-alert>
-    <el-descriptions v-else-if="saved" :column="1" border>
+    <el-descriptions v-else-if="saved" :column="1" :direction="isMobile ? 'vertical' : 'horizontal'" border>
       <el-descriptions-item v-for="question in feedbackQuestions" :key="question.key" :label="question.label">
         {{ saved[question.key] }}
       </el-descriptions-item>
@@ -37,11 +37,12 @@
 
 <script setup>
 import { reactive, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 import { getTaskFeedback, submitTaskFeedback } from '@/api/task'
 import { feedbackQuestions, feedbackChoices } from '@/utils/assessmentFields'
 
 const props = defineProps({ taskId: { type: [String, Number], required: true }, readonly: Boolean })
+const isMobile = useMediaQuery('(max-width: 767px)')
 const emit = defineEmits(['submitted'])
 const saved = ref(null)
 const loading = ref(false)

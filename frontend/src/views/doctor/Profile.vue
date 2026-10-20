@@ -4,9 +4,9 @@
       <h1 class="page-title">个人主页</h1>
     </div>
 
-    <el-row :gutter="20">
+    <el-row :gutter="20" class="responsive-row">
       <!-- 个人信息卡片 -->
-      <el-col :span="12">
+      <el-col :xs="24" :sm="24" :md="12">
         <el-card shadow="never">
           <template #header>
             <span style="font-weight: 600">个人信息</span>
@@ -28,7 +28,7 @@
       </el-col>
 
       <!-- 编辑资料 -->
-      <el-col :span="12">
+      <el-col :xs="24" :sm="24" :md="12">
         <el-card shadow="never">
           <template #header>
             <span style="font-weight: 600">编辑资料</span>
@@ -63,7 +63,6 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { getDoctorById, updateProfile } from '@/api/doctor'
-import { ElMessage } from 'element-plus'
 
 const userStore = useUserStore()
 const formRef = ref(null)

@@ -58,7 +58,7 @@
       </el-table>
     </div>
 
-    <div class="table-container" style="margin-top: 16px; display: flex; align-items: center; justify-content: flex-end; gap: 8px">
+    <div class="table-container pagination-bar" style="margin-top: 16px">
       <span>共 {{ pagination.total }} 条</span>
       <el-select v-model="pagination.pageSize" style="width: 100px" @change="fetchData">
         <el-option :value="5" label="5条/页" />
@@ -116,7 +116,6 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { getDoctorList, addDoctor, updateDoctor, updateDoctorStatus, deleteDoctor } from '@/api/doctor'
-import { ElMessage, ElMessageBox } from 'element-plus'
 
 const loading = ref(false)
 const tableData = ref([])

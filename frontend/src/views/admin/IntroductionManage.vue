@@ -28,7 +28,6 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { getProjectIntroduction, saveProjectIntroduction } from '@/api/introduction'
 import IntroductionContent from '@/components/IntroductionContent.vue'
 
