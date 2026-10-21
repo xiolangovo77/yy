@@ -32,6 +32,7 @@ import com.ecnu.model.vo.AssessmentForm1VO;
 import com.ecnu.model.vo.AssessmentForm2VO;
 import com.ecnu.model.vo.AssessmentTaskVO;
 import com.ecnu.service.AssessmentTaskService;
+import com.ecnu.utils.RepetitiveBehaviorValue;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
@@ -312,14 +313,14 @@ public class AssessmentTaskServiceImpl implements AssessmentTaskService {
         requireRating(dto.getEyeContact(), "眼神交流");
         requireRating(dto.getSocialReciprocity(), "社会互惠性");
         requireRating(dto.getSocialEmotionalExpression(), "社会情绪表达");
-        ThrowUtils.throwIf(StrUtil.isBlank(dto.getRepetitiveBehavior()), ErrorCode.PARAMS_ERROR, "请填写重复刻板或感觉异常行为，未观察到时请注明");
-        ThrowUtils.throwIf(dto.getRepetitiveBehavior().length() > 2000, ErrorCode.PARAMS_ERROR, "行为描述不能超过2000字");
+        String repetitiveBehavior = RepetitiveBehaviorValue.normalize(dto.getRepetitiveBehavior());
 
         requireWritableTask(taskId, 1);
 
         // 更新一阶段表单
         AssessmentForm1 form1 = new AssessmentForm1();
         BeanUtil.copyProperties(dto, form1);
+        form1.setRepetitiveBehavior(repetitiveBehavior);
         boolean result = assessmentForm1Mapper.update(form1);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "提交一阶段表单失败");
 

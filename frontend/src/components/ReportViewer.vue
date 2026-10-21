@@ -13,7 +13,7 @@
       <div class="rv-main">
         <div class="overview-grid">
           <section v-for="section in overview.slice(0, 4)" :key="section.number"
-            class="overview-card" :class="{ wide: section.number <= 2, conclusion: section.number === 4 }">
+            class="overview-card" :class="{ wide: section.number <= 2, conclusion: section.title === '综合筛查意见' }">
             <div class="section-heading">
               <span class="section-number">{{ String(section.number).padStart(2, '0') }}</span>
               <h3>{{ section.title }}</h3>
@@ -22,7 +22,7 @@
             <p v-else class="empty-text">报告中暂无此模块内容。</p>
           </section>
 
-          <section class="overview-card wide combined-overview" aria-label="主要鉴别与证据限制">
+          <section class="overview-card wide combined-overview" :class="{ conclusion: overview.slice(4).some(section => section.title === '综合筛查意见') }" :aria-label="overview.slice(4).map(section => section.title).join('、')">
             <div v-for="section in overview.slice(4)" :key="section.number" class="combined-section">
               <div class="section-heading">
                 <span class="section-number">{{ String(section.number).padStart(2, '0') }}</span>
@@ -50,7 +50,7 @@
             <h3>可审计时间轴</h3>
             <span class="count">{{ filteredTimeline.length }} / {{ timeline.length }} 条证据</span>
           </div>
-          <p class="panel-description">点击事件，定位到对应任务视频的起始时间。</p>
+          <p class="panel-description">点击事件回看片段；未提供片段时间的事件打开完整视频。缺少视频的证据仍保留展示。</p>
           <input v-model="search" type="search" aria-label="搜索时间轴" placeholder="搜索任务、证据或来源">
           <p v-if="timelineError" class="feedback" role="status">{{ timelineError }}</p>
           <div v-else class="timeline">
@@ -59,12 +59,12 @@
               :aria-pressed="selectedEvent === event" @click="loadEventVideo(event)">
               <span class="event-top">
                 <strong>{{ event.label || event.id }}</strong>
-                <span class="event-time">{{ formatTime(event.start_s) }}–{{ formatTime(event.end_s) }}</span>
+                <span class="event-time">{{ eventTimeLabel(event) }}</span>
               </span>
               <span class="event-task">{{ taskZh[event.task] || event.task }} · {{ event.id }}</span>
               <span v-if="event.metric" class="event-metric">{{ event.metric }}</span>
               <span class="event-description">{{ event.interpretation }}</span>
-              <span class="event-source">来源：{{ event.source || '未提供' }}<br>视频：{{ event.video_uri || '未提供' }}</span>
+              <span class="event-source">来源：{{ event.source || '未提供' }}<br>视频：{{ event.video_uri || event.location_text || '未提供' }}</span>
             </button>
             <p v-if="!filteredTimeline.length" class="empty-text">
               {{ timeline.length ? '没有匹配事件，请尝试其他关键词。' : '报告中暂无可审计时间轴。' }}
@@ -90,7 +90,7 @@
           <div v-if="selectedEvent" class="selected-evidence">
             <span class="eyebrow">当前定位证据</span>
             <strong>{{ selectedEvent.label }}</strong>
-            <span>{{ formatTime(selectedEvent.start_s) }}–{{ formatTime(selectedEvent.end_s) }}</span>
+            <span>{{ eventTimeLabel(selectedEvent) }}</span>
           </div>
           <p v-if="videoMessage" class="feedback" role="status">{{ videoMessage }}</p>
         </section>
@@ -136,18 +136,31 @@ function selectVideo(url) {
   selectedVideoUrl.value = url
 }
 
+function eventTimeLabel(event) {
+  if (event.video_mode === 'full') return '完整视频（无片段时间）'
+  if (event.video_mode === 'missing') return '未提供对应视频'
+  if (event.video_mode === 'invalid') return '片段时间无效'
+  if (event.start_s == null) return '未提供片段时间'
+  return event.end_s == null ? `${formatTime(event.start_s)} 起` : `${formatTime(event.start_s)}–${formatTime(event.end_s)}`
+}
+
 async function loadEventVideo(event) {
+  if (event.video_mode === 'missing') {
+    videoMessage.value = event.location_text || '报告未提供该证据对应的视频。'
+    return
+  }
   const hit = findVideo(availableVideos.value, event.video_uri)
   if (!hit) {
     videoMessage.value = `未匹配到视频：${event.video_uri || '未提供视频路径'}，请检查该儿童的关联视频。`
     return
   }
-  const start = Number(event.start_s)
-  if (event.start_s == null || !Number.isFinite(start) || start < 0) {
+  const fullVideo = event.video_mode === 'full'
+  const start = fullVideo ? 0 : Number(event.start_s)
+  if ((!fullVideo && event.start_s == null) || !Number.isFinite(start) || start < 0) {
     videoMessage.value = '该事件没有有效的起始时间，无法定位。'
     return
   }
-  videoMessage.value = ''
+  videoMessage.value = fullVideo ? '该事件未提供可靠的片段时间，已打开完整视频供回看。' : ''
   selectedEvent.value = event
   pendingSeek = start
   if (selectedVideoUrl.value !== hit.videoUrl) currentTime.value = 0

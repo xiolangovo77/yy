@@ -48,7 +48,7 @@ public class AssessmentForm1VO {
     @Schema(description = "社会情绪表达（1-5分，严重程度递增）")
     private Integer socialEmotionalExpression;
 
-    @Schema(description = "重复刻板或感觉异常行为")
+    @Schema(description = "重复刻板或感觉异常行为：无，或有，严重程度：N分（1-5）；历史记录可能为自由文本", example = "有，严重程度：3分")
     private String repetitiveBehavior;
 
 

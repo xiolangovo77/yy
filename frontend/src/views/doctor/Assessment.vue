@@ -84,8 +84,20 @@
                 </el-radio-group>
               </div>
             </el-form-item>
-            <el-form-item label="重复刻板或感觉异常行为问题严重程度" prop="repetitiveBehavior" class="behavior-description">
-              <el-input v-model="form1.repetitiveBehavior" type="textarea" :rows="4" maxlength="2000" show-word-limit placeholder="出现何种重复动作、刻板摆弄物体、异常感觉兴趣等？未观察到时请填写“未观察到”。" />
+            <el-form-item label="重复刻板或感觉异常行为问题严重程度" prop="repetitiveBehaviorPresent" class="behavior-description">
+              <div class="score-field">
+                <p>请先选择有无此类行为；选择“有”后，需评1–5分，分数越高表示严重程度越高。</p>
+                <p v-if="legacyRepetitiveBehavior" class="legacy-behavior">历史记录：{{ legacyRepetitiveBehavior }}。请按当前方式重新选择有无及严重程度。</p>
+                <el-radio-group v-model="form1.repetitiveBehaviorPresent" @change="onRepetitiveBehaviorChange">
+                  <el-radio :value="true">有</el-radio>
+                  <el-radio :value="false">无</el-radio>
+                </el-radio-group>
+              </div>
+            </el-form-item>
+            <el-form-item v-if="form1.repetitiveBehaviorPresent === true" label="严重程度" prop="repetitiveBehaviorSeverity">
+              <el-radio-group v-model="form1.repetitiveBehaviorSeverity">
+                <el-radio-button v-for="score in 5" :key="score" :value="score">{{ score }}分</el-radio-button>
+              </el-radio-group>
             </el-form-item>
             <el-form-item>
               <el-button type="success" :loading="form1Submitting" size="large" @click="submitForm1">
@@ -198,6 +210,7 @@ import { getReportList } from '@/api/report'
 import ReportViewer from '@/components/ReportViewer.vue'
 import TaskFeedback from '@/components/TaskFeedback.vue'
 import { stageOneScores, stageTwoScores, emptyScores, scoreRules } from '@/utils/assessmentFields'
+import { parseRepetitiveBehavior, serializeRepetitiveBehavior } from '@/utils/repetitiveBehavior'
 
 const isMobile = useMediaQuery('(max-width: 767px)')
 const isTablet = useMediaQuery('(max-width: 1199px)')
@@ -227,17 +240,23 @@ const taskInfo = reactive({
 })
 
 const assessmentComplete = computed(() => taskInfo.taskStatus === 2 && taskInfo.feedbackSubmitted)
+const legacyRepetitiveBehavior = ref('')
 
 const form1 = reactive({
   diseaseType: '', confidence: 0, diagnosticBasis: '',
-  ...emptyScores(stageOneScores), repetitiveBehavior: ''
+  ...emptyScores(stageOneScores), repetitiveBehaviorPresent: null, repetitiveBehaviorSeverity: null
 })
 
 const form1Rules = {
   ...scoreRules(stageOneScores),
-  repetitiveBehavior: [
-    { required: true, whitespace: true, message: '请描述相关行为，未观察到时请注明', trigger: 'blur' },
-    { max: 2000, message: '行为描述不能超过2000字', trigger: 'blur' }
+  repetitiveBehaviorPresent: [
+    { required: true, type: 'boolean', message: '请选择有无重复刻板或感觉异常行为', trigger: 'change' }
+  ],
+  repetitiveBehaviorSeverity: [
+    { validator: (_rule, value, callback) => {
+      const valid = form1.repetitiveBehaviorPresent !== true || (Number.isInteger(value) && value >= 1 && value <= 5)
+      callback(valid ? undefined : new Error('请选择1–5分的严重程度'))
+    }, trigger: 'change' }
   ],
   diseaseType: [{ required: true, message: '请选择疾病判定', trigger: 'change' }],
   confidence: [{ required: true, message: '请设置判断信心', trigger: 'change' }],
@@ -255,6 +274,11 @@ const form2Rules = {
   confidence: [{ required: true, message: '请设置判断信心', trigger: 'change' }],
   diagnosticBasis: [{ required: true, message: '请输入判断依据', trigger: 'blur' }],
   finalConclusion: [{ required: true, message: '请输入最终判断结论', trigger: 'blur' }]
+}
+
+function onRepetitiveBehaviorChange() {
+  form1.repetitiveBehaviorSeverity = null
+  form1Ref.value?.clearValidate('repetitiveBehaviorSeverity')
 }
 
 function statusTag(s) {
@@ -313,7 +337,10 @@ async function loadStageOne(taskId) {
     form1.confidence = res.data.confidence ?? 0
     form1.diagnosticBasis = res.data.diagnosticBasis || ''
     for (const field of stageOneScores) form1[field.key] = res.data[field.key] ?? null
-    form1.repetitiveBehavior = res.data.repetitiveBehavior || ''
+    const behavior = parseRepetitiveBehavior(res.data.repetitiveBehavior)
+    form1.repetitiveBehaviorPresent = behavior.present
+    form1.repetitiveBehaviorSeverity = behavior.severity
+    legacyRepetitiveBehavior.value = behavior.legacyText
   }
 }
 
@@ -362,7 +389,7 @@ async function submitForm1() {
       confidence: form1.confidence,
       diagnosticBasis: form1.diagnosticBasis,
       ...Object.fromEntries(stageOneScores.map(field => [field.key, form1[field.key]])),
-      repetitiveBehavior: form1.repetitiveBehavior
+      repetitiveBehavior: serializeRepetitiveBehavior(form1.repetitiveBehaviorPresent, form1.repetitiveBehaviorSeverity)
     })
     ElMessage.success('阶段一提交成功，进入阶段二')
     taskInfo.currentStep = 2
@@ -434,6 +461,7 @@ onMounted(() => loadTask())
 .stage-two-guide { margin-bottom: 24px; }
 .stage-two-guide p { margin: 8px 0; line-height: 1.8; }
 .score-field { min-width: 0; width: 100%; }
+.legacy-behavior { white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 767px) {
   .task-summary :deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
     font-size: 16px;

@@ -6,6 +6,7 @@ import * as vue from 'vue'
 import validator from 'async-validator'
 import * as fields from '../src/utils/assessmentFields.js'
 import * as report from '../src/utils/screeningReport.js'
+import * as behavior from '../src/utils/repetitiveBehavior.js'
 
 const Schema = validator.default || validator
 
@@ -25,6 +26,7 @@ function setupComponent(path, props = {}, api = {}, emit = () => {}) {
     '@/utils/video': {},
     '@/utils/assessmentFields': fields,
     '@/utils/screeningReport': report,
+    '@/utils/repetitiveBehavior': behavior,
     '@/components/ReportViewer.vue': {},
     '@/components/TaskFeedback.vue': {}
   }
@@ -57,6 +59,79 @@ function assessment(api = {}) {
   harness.state.form2Ref.value = { validate: async () => true }
   return harness
 }
+
+test('行为有无为必选，选择有时仅接受1–5整数，选择无时无需分数', async () => {
+  const h = assessment()
+  try {
+    const schema = new Schema({
+      repetitiveBehaviorPresent: h.state.form1Rules.repetitiveBehaviorPresent,
+      repetitiveBehaviorSeverity: h.state.form1Rules.repetitiveBehaviorSeverity
+    })
+    const validate = () => schema.validate({ ...h.state.form1 })
+    await assert.rejects(validate())
+    h.state.form1.repetitiveBehaviorPresent = false
+    await validate()
+    h.state.form1.repetitiveBehaviorPresent = true
+    for (const score of [null, 0, 6, 2.5, '3']) {
+      h.state.form1.repetitiveBehaviorSeverity = score
+      await assert.rejects(validate())
+    }
+    for (let score = 1; score <= 5; score++) {
+      h.state.form1.repetitiveBehaviorSeverity = score
+      await validate()
+    }
+  } finally { h.stop() }
+})
+
+test('从有改为无时清除旧评分，再选有必须重新评分', () => {
+  const h = assessment()
+  try {
+    h.state.form1.repetitiveBehaviorPresent = true
+    h.state.form1.repetitiveBehaviorSeverity = 4
+    h.state.form1.repetitiveBehaviorPresent = false
+    h.state.onRepetitiveBehaviorChange()
+    assert.equal(h.state.form1.repetitiveBehaviorSeverity, null)
+    assert.equal(behavior.serializeRepetitiveBehavior(false, 4), '无')
+    h.state.form1.repetitiveBehaviorPresent = true
+    h.state.onRepetitiveBehaviorChange()
+    assert.throws(() => behavior.serializeRepetitiveBehavior(true, h.state.form1.repetitiveBehaviorSeverity))
+  } finally { h.stop() }
+})
+
+test('新格式可回显，历史文本保留为参考且不猜测分数', async () => {
+  for (const text of ['无', '有，严重程度：1分', '有，严重程度：5分', '反复摆手', '未观察到']) {
+    const h = assessment({ getForm1ByTaskId: async () => ({ data: { repetitiveBehavior: text } }) })
+    try {
+      await h.state.loadStageOne('42')
+      const parsed = behavior.parseRepetitiveBehavior(text)
+      assert.equal(h.state.form1.repetitiveBehaviorPresent, parsed.present)
+      assert.equal(h.state.form1.repetitiveBehaviorSeverity, parsed.severity)
+      if (text === '反复摆手' || text === '未观察到') {
+        assert.equal(parsed.present, null)
+        assert.equal(parsed.severity, null)
+        assert.equal(h.state.legacyRepetitiveBehavior.value, text)
+      } else {
+        assert.equal(behavior.serializeRepetitiveBehavior(parsed.present, parsed.severity), text)
+      }
+    } finally { h.stop() }
+  }
+})
+
+test('提交阶段一仍通过原字符串字段传输有无与严重程度', async () => {
+  for (const [present, severity, expected] of [[false, null, '无'], [true, 3, '有，严重程度：3分']]) {
+    let payload
+    const h = assessment({ submitForm1: async data => { payload = data } })
+    try {
+      h.state.form1Ref.value = { validate: async () => true }
+      h.state.form1.repetitiveBehaviorPresent = present
+      h.state.form1.repetitiveBehaviorSeverity = severity
+      await h.state.submitForm1()
+      assert.equal(payload.repetitiveBehavior, expected)
+      assert.equal('repetitiveBehaviorPresent' in payload, false)
+      assert.equal('repetitiveBehaviorSeverity' in payload, false)
+    } finally { h.stop() }
+  }
+})
 
 test('报告使用评价未填完整时，不提交阶段二，也不标记完成', async () => {
   let calls = 0
